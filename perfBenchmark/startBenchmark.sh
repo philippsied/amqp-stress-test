@@ -17,4 +17,5 @@ cd ..
 cd $CLIENTDIR
 sh runjava.sh com.rabbitmq.examples.PerfTestMulti ../$TESTENV/$SPEC ../$TESTENV/$TARGET
 cd ..
+rm $TESTENV/$SPEC
 
