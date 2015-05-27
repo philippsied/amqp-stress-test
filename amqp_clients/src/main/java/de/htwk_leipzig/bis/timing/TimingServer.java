@@ -1,9 +1,11 @@
 package de.htwk_leipzig.bis.timing;
 
+import java.net.URI;
 import java.nio.ByteBuffer;
 
 import com.rabbitmq.client.QueueingConsumer;
 
+import de.htwk_leipzig.bis.util.AMQPSubscriber;
 import de.htwk_leipzig.bis.util.ToolBox;
 
 /**
@@ -11,16 +13,25 @@ import de.htwk_leipzig.bis.util.ToolBox;
  * 
  *
  */
-public class TimingServer extends TimingSubscriber {
+public class TimingServer extends AMQPSubscriber {
+	private final static String QUEUE_NAME_REQUEST = "request";
+	private final static String QUEUE_NAME_RESPONSE = "response";
+	private final static String QUEUE_NAME_SYNC = "timesync";
+
 	private long mTimeOffset;
 
-	public TimingServer() {
+	public TimingServer(final URI uri) {
+		super(uri);
 		mTimeOffset = 0;
 	}
 
 	@Override
 	protected void doSubscriberActions() throws Exception {
 		// adjustOffset();
+
+		mChannel.queueDeclare(QUEUE_NAME_REQUEST, false, false, true, null);
+		mChannel.queueDeclare(QUEUE_NAME_RESPONSE, false, false, true, null);
+		mChannel.queueDeclare(QUEUE_NAME_SYNC, false, false, true, null);
 
 		final QueueingConsumer consumer = new QueueingConsumer(mChannel);
 		mChannel.basicConsume(QUEUE_NAME_REQUEST, true, consumer);
