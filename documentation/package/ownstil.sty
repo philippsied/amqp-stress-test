@@ -1,0 +1,95 @@
+%---ownstil.sty
+%-Einstellung für deutsche Texte, Sonderzeichen, Darstellung von Zeichen
+	\usepackage[utf8]{inputenc}			% UTF-8 Kodierung
+	\usepackage[T1]{fontenc}			% Buchstabenkodierung
+	\usepackage[ngerman]{babel}			% Neue Deutsche Rechtschreibung
+	\usepackage{marvosym} 				% Erweitert Befehlsumfang darstellbare Symbole
+	\usepackage{pifont}				% Erweiterung der Sonderzeichen
+	\usepackage{courier}
+	\usepackage{lmodern}				% Verbessert die Darstellung der Latin -Buchstaben auf Computerbildschirmen
+	\usepackage[nohyperlinks]{acronym}
+
+% Layout
+	\tolerance=2000 					% Toleranz für Wortzwischentäume
+	\setlength{\emergencystretch}{20pt} 	% Zusätzlicher Zeilendehnbarkeit in Notfällen
+	\clubpenalty10000					% Vermeidung Schusterjungen
+	\widowpenalty10000				% Vermeidung Hurenkinder
+	\displaywidowpenalty=10000 			% Vermeidung Hurenkinder nach abgesetzer Math-Umgebung  
+
+% Seitenlayout
+	\usepackage[	a4paper,
+				left=3cm,
+				right=2.5cm,
+				top=1.5cm,
+				bottom=1.5cm,
+				nomarginpar,
+				headheight=7mm,
+				headsep=1.2cm,
+				footnotesep=1cm,
+				footskip=1.2cm,
+				includeheadfoot]{geometry}
+% Bezeichnungen
+	\usepackage[	format=hang,
+				font={footnotesize,rm},
+				labelfont={bf},
+				margin=0.8cm,
+				aboveskip=8pt,
+				belowskip=12pt,
+				position=bottom]{caption}
+% Kopf und Fußzeile
+	\usepackage[automark,headsepline=1pt:text,plainheadsepline]{scrlayer-scrpage}
+	\pagestyle{scrheadings}
+	\clearscrheadings
+	\clearscrplain
+
+	\ihead[\ptitle]{\headmark}
+
+	\setkomafont{pagenumber}{\upshape\bfseries}
+	\ohead[\textsc{Seite}\quad\textsc{\pagemark}]{\textsc{Seite}\quad\pagemark}
+
+%Tabellen
+\setlength{\tabcolsep}{10pt}
+\renewcommand{\arraystretch}{1.5}
+
+
+% Überschriften in Schriftart Times
+	\renewcommand*\familydefault{\rmdefault}
+	\setkomafont{sectioning}{\normalcolor\bfseries}
+
+% Vereinfachung erweiterung Basisbefehle
+	\usepackage{listings}
+	\renewcommand{\lstlistingname}{Quelltext}
+	\lstset{
+		basicstyle=\ttfamily\small,
+		keywordstyle={\color{Navy}\bfseries},
+		identifierstyle={\color{DarkRed}},
+		commentstyle={\color{DarkOrange!50!black}\slshape},
+		stringstyle={\color{DarkGreen}},
+		showspaces=false,
+		showstringspaces=false,
+		breaklines=true,
+		literate=%
+		{Ö}{{\"O}}1
+		{Ä}{{\"A}}1
+		{Ü}{{\"U}}1
+		{ß}{{\ss}}1
+		{ü}{{\"u}}1
+		{ä}{{\"a}}1
+		{ö}{{\"o}}1
+		{~}{{\textasciitilde}}1
+	}
+	\lstdefinestyle{mySH}{
+		language=bash,
+		basicstyle=\ttfamily\small,
+		keywordstyle={\color{DarkRed}\bfseries},
+		identifierstyle={\color{Black}},
+		commentstyle={\color{Navy}\footnotesize},
+		stringstyle={\color{Magenta}},
+		columns=fullflexible,
+		extendedchars=true,
+		breaklines=true,
+		keywords={sudo,make,insmod,awk},
+		escapeinside={\%*(}{*)}}
+
+
+\usepackage[pdfpagelabels,hidelinks]{hyperref}

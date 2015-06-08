@@ -1,0 +1,80 @@
+\documentclass[	a4paper,
+			11pt,
+			titlepage,
+			oneside,
+			fleqn,
+			listof=totoc,
+			parskip,
+			chapterprefix=false,
+			numbers=noenddot]{scrreprt}
+\usepackage{package/ownstil}
+\usepackage{package/owncmd}
+
+%\input{package/header}
+
+\begin{document}
+%	\maketitle\clearpage
+	
+	
+	\section*{Zielstellung und Rahmenbedingungen}
+
+	
+	\clearpage
+	\section*{Testumgebung}
+	
+	
+	\clearpage
+	\section*{Verwendete bzw. Erstellte Programme}
+	
+	\clearpage
+	\section*{Beschreibung der Anwendungsszenarien}
+	\usecase{Direkte Nachrichten 1:1}%
+		{Ein Producer erzeugt kontinuierlich Nachrichten, die von einem Consumer kontinuierlich korrekt entnommen werden.}%
+		{perfTest -h}%
+		{}
+		
+	\usecase{}%
+		{}%
+		{}%
+		{}
+		
+	\usecase{}%
+		{}%
+		{}%
+		{}
+	
+	\clearpage
+	\section*{Beschreibung der Angriffe}
+	\attack{Ignorieren von Nachrichten}%
+		{Ein Producer erzeugt kontinuierlich Nachrichten, die von einem oder mehreren Consumer empfangen, aber nicht quittiert werden.%
+		 Der RabbitMQ-Server ist somit gezwungen, die Nachrichten in der Queue zwischenzuspeichern.}%
+		{}%
+		{Amqpstress -dm No -c 5 -i 1 -ms 1048576 -mp -u amqp://testc:testp@localhost:5672/\%2f}%
+		{}%
+		{Durch Verwendung einer höheren Anzahl an Consumer, kleineren Sendeintervallen, größeren Nachrichtengrößen sowie durch Verwendung von persistenten %
+		Queues kann die Auswirkung des Angriffs erhöht werden.}
+	
+	\attack{Sofortiges Abweisen von Nachrichten}%
+		{Ein Producer erzeugt kontinuierlich Nachrichten, die von einem oder mehreren Consumer empfangen, aber sofort abgewiesen (basic.Reject) werden.%
+		 Der RabbitMQ-Server ist somit gezwungen, die Nachrichten in der Queue zwischenzuspeichern und erneut an den Consumer zu senden.}%
+		{}%
+		{Amqpstress -dm REJECT -c 5 -i 1 -ms 1048576 -mp -u amqp://testc:testp@localhost:5672/\%2f}%
+		{}%
+		{Durch Verwendung einer höheren Anzahl an Consumer, kleineren Sendeintervallen, größeren Nachrichtengrößen sowie durch Verwendung von persistenten %
+		Queues kann die Auswirkung des Angriffs erhöht werden.}
+	
+	\attack{Gebündeltes Abweisen von Nachrichten}%
+		{Ein Producer erzeugt kontinuierlich Nachrichten, die von einem oder mehreren Consumer empfangen, zunächst ignoriert werden, um sie bei erreichen eines Schwellwertes gebündelt abzuweisen (basic.NACK). Dadurch ist der RabbitMQ-Server gewzungen alle Nachrichten zwischenzuspeichern und stoßweise alle Nachrichten bis zu einer gewissen Nachrichtenkennung erneut zuzustellen.}%
+		{}%
+		{Amqpstress -dm NACK -c 5 -i 1 -ms 1048576 -mp -u amqp://testc:testp@localhost:5672/\%2f}%
+		{}
+	
+	\clearpage
+	\section*{Auswirkungen der Angriffe}
+	
+	
+	
+	\clearpage
+	\section*{Zusammenfassung und Fazit}
+
+\end{document}
