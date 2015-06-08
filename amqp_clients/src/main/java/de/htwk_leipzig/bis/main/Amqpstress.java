@@ -29,6 +29,8 @@ import de.htwk_leipzig.bis.dos.msg_response.MessageConsumer;
 import de.htwk_leipzig.bis.dos.msg_response.MessageProducer;
 import de.htwk_leipzig.bis.dos.msg_response.ResponseAction;
 import de.htwk_leipzig.bis.dos.queue.QueueSwapper;
+import de.htwk_leipzig.bis.header.LargeHeaderProducer;
+import de.htwk_leipzig.bis.channel.ManyChannel;
 import de.htwk_leipzig.bis.timing.TimingClient;
 import de.htwk_leipzig.bis.timing.TimingServer;
 import de.htwk_leipzig.bis.util.ToolBox;
@@ -57,6 +59,8 @@ public class Amqpstress {
 		optionGrp.addOption(ProgramOptions.AS_CLIENT_OPT);
 		optionGrp.addOption(ProgramOptions.AS_DOS_MSG);
 		optionGrp.addOption(ProgramOptions.AS_DOS_QUEUE);
+		optionGrp.addOption(ProgramOptions.AS_LARGE_HEADER);
+		optionGrp.addOption(ProgramOptions.AS_MANY_CHANNEL);
 		options.addOptionGroup(optionGrp);
 		options.addOption(ProgramOptions.PRODUCER_COUNT_OPT);
 		options.addOption(ProgramOptions.CONSUMER_COUNT_OPT);
@@ -150,6 +154,16 @@ public class Amqpstress {
 			} catch (InterruptedException e) {
 				System.out.println("Timeout reached");
 			}
+			System.exit(0);
+		}
+		
+		if (cmd.hasOption(ProgramOptions.AS_LARGE_HEADER.getOpt())) {
+			(new LargeHeaderProducer(uri, messageSize)).run();
+			System.exit(0);
+		}
+		
+		if (cmd.hasOption(ProgramOptions.AS_MANY_CHANNEL.getOpt())) {
+			new ManyChannel(uri, producerCount, consumerCount, messageSize);
 			System.exit(0);
 		}
 
@@ -274,6 +288,14 @@ public class Amqpstress {
 		public static final Option AS_DOS_MSG = OptionBuilder.isRequired(false).hasArg().withArgName("responsetyp")
 				.withDescription("DoS with messages, type is one of \"ACK\",\"NO\",\"NACK\",\"REJECT\"").withLongOpt("dosmsg").create("dm");
 
+		@SuppressWarnings("static-access")
+		public static final Option AS_LARGE_HEADER = OptionBuilder.isRequired(false)
+				.withDescription("Send messages with large header").withLongOpt("largeheader").create("lh");
+		
+		@SuppressWarnings("static-access")
+		public static final Option AS_MANY_CHANNEL = OptionBuilder.isRequired(false)
+				.withDescription("Send messages over one Connection and many Channels - set over -p and -c").withLongOpt("manych").create("mc");
+		
 		@SuppressWarnings("static-access")
 		public static final Option AS_DOS_QUEUE = OptionBuilder.isRequired(false).withDescription("DoS with queues").withLongOpt("dosqueue").create("dq");
 
