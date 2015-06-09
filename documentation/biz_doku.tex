@@ -17,8 +17,15 @@
 	
 	
 	\section*{Zielstellung und Rahmenbedingungen}
-
 	
+	Diese Dokumentation beschäftigt sich mit dem Thema \glqq Angriffe auf AMQP-Messagebroker\grqq . Begleitend zur Vorlesung  \glqq Betriebliche Informationssysteme\grqq\/ galt es von uns in einem Praktikum zu identifizieren, welche potenziellen Angriffsvektoren existieren. Eingeschlossen ist hier auch das System \glqq RabbitMQ\grqq\/ welches das zu untersuchende Protokoll einschließt.
+
+Ziel ist es bestimmt Angriffsvektoren aufzuspüren und zu bewerten. Durch Implementierung von einzelnen Clients auf Basis der RabbitMQ Java-Bibliothek sollen die Angriffe veranschaulicht werden.  Mit veränderten Parametern richtet sich die Suche gezielt nach Faktoren die das System negativ beeinflussen und so die Verfügbarkeit stören, fokussiert auf \glqq Denial of Service\grqq. DoS kann dabei auf verschiedene Ressourcen bezogen sein (wie CPU, Arbeitsspeicher, Netzwerkbandbreite, …).
+
+Um die Begrenzungen ausfindig zu machen, gehört es zu Beginn zu unsere Aufgabe angemessene Werkzeuge zur Beobachtung der Ressourcen zu finden. Nur dann ist es möglich die Angriffe zu bewerten und ihre tiefere Auswirkung zu untersuchen.
+
+Ferner sollen Vorschläge zur Schadensbegrenzung gegeben werden. Dazu gehört die Angabe auf welcher Ebene (Netzwerkebene, Protokollebene, …) sich die Gefahren beseitigen lassen.
+
 	\clearpage
 	\section*{Testumgebung}
 	
@@ -54,6 +61,8 @@
 		{Durch Verwendung einer höheren Anzahl an Consumer, kleineren Sendeintervallen, größeren Nachrichtengrößen sowie durch Verwendung von persistenten %
 		Queues kann die Auswirkung des Angriffs erhöht werden.}
 	
+		%------------------------------------------------------------------------------
+	
 	\attack{Sofortiges Abweisen von Nachrichten}%
 		{Ein Producer erzeugt kontinuierlich Nachrichten, die von einem oder mehreren Consumer empfangen, aber sofort abgewiesen (basic.Reject) werden.%
 		 Der RabbitMQ-Server ist somit gezwungen, die Nachrichten in der Queue zwischenzuspeichern und erneut an den Consumer zu senden.}%
@@ -63,11 +72,32 @@
 		{Durch Verwendung einer höheren Anzahl an Consumer, kleineren Sendeintervallen, größeren Nachrichtengrößen sowie durch Verwendung von persistenten %
 		Queues kann die Auswirkung des Angriffs erhöht werden.}
 	
+		%------------------------------------------------------------------------------
+	
 	\attack{Gebündeltes Abweisen von Nachrichten}%
 		{Ein Producer erzeugt kontinuierlich Nachrichten, die von einem oder mehreren Consumer empfangen, zunächst ignoriert werden, um sie bei erreichen eines Schwellwertes gebündelt abzuweisen (basic.NACK). Dadurch ist der RabbitMQ-Server gewzungen alle Nachrichten zwischenzuspeichern und stoßweise alle Nachrichten bis zu einer gewissen Nachrichtenkennung erneut zuzustellen.}%
 		{}%
 		{Amqpstress -dm NACK -c 5 -i 1 -ms 1048576 -mp -u amqp://testc:testp@localhost:5672/\%2f}%
 		{}
+		
+		%------------------------------------------------------------------------------
+		
+	\attack{Versenden von  Nachrichten mit großem Header}%
+		{RabbitMQ bietet die Möglichkeit im Header der Nachricht bestimmt Parameter für die Weiterleitung zu deklarieren. Dieser Test beschäftigt sich mit der Auswirkung, wenn der Header unnötig ausgelastet wird. Das System ist gezwungen alle Weiterleitungsoptionen zu Prüfen, auch wenn diese keinem Ziel entsprechen.}%
+		{\parbox[c][1.3cm][c]{10.5cm}{-lh (Aufrufparameter für Headererzeugung) \\ -ms 10000 (Messagegröße in Byte - hier: 10000) \\ -u (URI für Verbindung mit Server)}}%
+		{Amqpstress -lh -ms 10000 -u amqp://testc:testp@localhost:5672}%
+		{Die Anwendung generiert zu Beginn 1000 Weiterleitungsoptionen und schreibt sie in den Header jeder Nachricht. Hierdurch ist das System stark ausgelastet und der Durchsatz der Nachrichten schrumpft stark auf 3 - 5 Nachrichten pro Sekunde.}
+		{Die Headergröße ist bei 2500 Weiterleitungsoptionen begrenzt. Wir diese überschritten lässt das System die Verbindung fallen, aufgrund einer zu großen Framegröße.}
+		
+		%------------------------------------------------------------------------------
+		
+	\attack{Aufbauen mehrerer Channel über eine einzelne Verbindung}%
+		{Neben einzelnen Verbindungen können in RabbitMQ auch mehrerer Kanäle aufgebaut werden. Hier stellt sich die Frage, wie das System mit einer Vielzahl von Kanäle zurecht kommt. Auf Basis einer einzelnen Verbindung wird das System so ausgelastet und beobachtet. }%
+		{\parbox[c][2cm][c]{10.5cm}{-mc (Aufrufparameter für Generierung mehrerer Channel) \\ -ms 10000 (Messagegröße in Byte - hier: 10000) \\ -u (URI für Verbindung mit Server) \\ -p 100 (Anzahl Producer - hier:100) \\ -c 10 (Anzahl Consumer - hier: 10)}}%
+		{Amqpstress -mc -p 100 -c 10 -ms 10000 -u amqp://testc:testp@localhost:5672}%
+		{Das System ist stark ausgelastet. Ähnelt aber der Auslastung unter der Erstellung mehrerer Verbindungen. Allerdings beansprucht  der Aufbau der Channel extrem viel Zeit. Nach Aufbau aller Kanäle bricht die Übertragungsrate stark ein.}
+		{Zeit für Aufbau der Channel hängt stark von der Anzahl von Producer und Consumer ab.}
+
 	
 	\clearpage
 	\section*{Auswirkungen der Angriffe}
