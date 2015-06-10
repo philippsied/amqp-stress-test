@@ -39,6 +39,8 @@ Ferner sollen Vorschläge zur Schadensbegrenzung gegeben werden. Dazu gehört di
 
 \paragraph{HTML Performance Tools} bieten ebenfalls ein breites Spektrum an Funktionalität. Mit einer Reihe von Tools und Unterstützung von perftest lassen sich automatisierte Benchmarks erstellen. Die gelieferten Daten dienen dem Vergleich der Systems vor und während des Angriffs. Alle Ergebnisse werden in einer JSON-Datei gesichert und ansprechend in einer HTML-Seite dargestellt
 
+\paragraph{VirtualBox} Der von uns verwendete Server wurde durch die Virtualisierungslösung VirtualBox realisiert. Neben der einfachen Installation neuer Gast-Systeme besteht die Möglichkeit Sicherheitspunkte zu erstellen. Bei einem Ausfall des System kann so der ursprüngliche Sicherungspunkt wiederhergestellt werden. Als Grundlage dient die Servervariante von Ubuntu 14.04 LTS, welche durch die fehlende grafische Oberfläche zum einsparen von Ressourcen dient.
+
 	
 	\clearpage
 	\section*{Beschreibung der Anwendungsszenarien}
@@ -105,6 +107,15 @@ Ferner sollen Vorschläge zur Schadensbegrenzung gegeben werden. Dazu gehört di
 		{Das System ist stark ausgelastet. Ähnelt aber der Auslastung unter der Erstellung mehrerer Verbindungen. Allerdings beansprucht  der Aufbau der Channel extrem viel Zeit. Nach Aufbau aller Kanäle bricht die Übertragungsrate stark ein.}
 		{Zeit für Aufbau der Channel hängt stark von der Anzahl von Producer und Consumer ab.}
 
+	%------------------------------------------------------------------------------
+		
+	\attack{Commit mehrerer Nachrichten im Transaktionsmodus}%
+		{Im Transaktionsmodus ist es möglich mehrere Nachrichten als Folge zu übertragen, die aber vergleichbar mit Datenbanken als Einheit betrachtet werden. Nur durch die Commit()-Funktion wird der neue Zustand angenommen und die Nachrichten im System zur Verfügung gestellt. Ferner kann mit der Rollback()-Funktion der ursprüngliche Zustand wiederhergestellt werden.}%
+		{\parbox[c][2.3cm][c]{10.5cm}{-tx (Aufrufparameter für Transaktionsmodus) \\ -ms 10000 (Messagegröße in Byte - hier: 10000) \\ -mct 10000 (Nachrichtenanzahl pro Producer - hier: 10000) \\ -co false (Commit der Transaktion - hier: Auslassen)\\ -p 100 (Anzahl Producer - hier: 100 )}}%
+		{-tx -p 100 -ms 10000 -mct 10000 -co false -u amqp://testc:testp@localhost:5672}%
+		{Durch Auslassen des Commits steigt der Speicherverbrauch stark an. Nach wenigen Sekunden ist die Speichergrenze erreicht und keine weiteren Nachrichten werden übertragen. Daraufhin verharren alle Producer bis der Speicher wieder freigegeben wird (Falls Consumer vorhanden) }
+		{Sporadisch friert der RabbitMQ-Server bei diesem Versuch ein. Ein Aufbau einer neuen Verbindung schlägt fehl und die Weboberfläche ist nicht mehr erreichbar. }
+	
 	
 	\clearpage
 	\section*{Auswirkungen der Angriffe}
