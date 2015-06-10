@@ -33,6 +33,7 @@ import de.htwk_leipzig.bis.header.LargeHeaderProducer;
 import de.htwk_leipzig.bis.channel.ManyChannel;
 import de.htwk_leipzig.bis.timing.TimingClient;
 import de.htwk_leipzig.bis.timing.TimingServer;
+import de.htwk_leipzig.bis.transaction.TxProducer;
 import de.htwk_leipzig.bis.util.ToolBox;
 
 /**
@@ -45,8 +46,10 @@ public class Amqpstress {
 	private static final int DEFAULT_PRODUCER_COUNT = 1;
 	private static final int DEFAULT_CONSUMER_COUNT = 5;
 	private static final int DEFAULT_MESSAGE_SIZE = 1024;
+	private static final int DEFAULT_MESSAGE_COUNT = 1000;
 	private static final int DEFAULT_INTERVAL = 100;
 	private static final int DEFAULT_PENDING_COUNT = 1000;
+	private static final int DEFAULT_HEADER_SIZE = 1000;
 	private static final boolean DEFAULT_USE_PERSISTENT_MESSAGE = false;
 
 	public static void main(String... args) throws Exception {
@@ -61,6 +64,7 @@ public class Amqpstress {
 		optionGrp.addOption(ProgramOptions.AS_DOS_QUEUE);
 		optionGrp.addOption(ProgramOptions.AS_LARGE_HEADER);
 		optionGrp.addOption(ProgramOptions.AS_MANY_CHANNEL);
+		optionGrp.addOption(ProgramOptions.AS_TRANSACTION);
 		options.addOptionGroup(optionGrp);
 		options.addOption(ProgramOptions.PRODUCER_COUNT_OPT);
 		options.addOption(ProgramOptions.CONSUMER_COUNT_OPT);
@@ -69,6 +73,9 @@ public class Amqpstress {
 		options.addOption(ProgramOptions.PENDING_COUNT_OPT);
 		options.addOption(ProgramOptions.PERSISTENT_MESSAGE_OPT);
 		options.addOption(ProgramOptions.URI_OPT);
+		options.addOption(ProgramOptions.HEADER_SIZE_OPT);
+		options.addOption(ProgramOptions.COMMIT_OPT);
+		options.addOption(ProgramOptions.MESSAGE_COUNT_OPT);
 
 		final CommandLineParser parser = new GnuParser();
 		CommandLine cmd = null;
@@ -109,6 +116,7 @@ public class Amqpstress {
 
 		final boolean userPersistent = getUsePersistent(cmd);
 		final int messageSize = getMessageSize(cmd);
+		final int headerSize = getHeaderSize(cmd);
 		final int interval = getInterval(cmd);
 		final int producerCount = getProducerCount(cmd);
 		final int consumerCount = getConsumerCount(cmd);
@@ -158,12 +166,17 @@ public class Amqpstress {
 		}
 		
 		if (cmd.hasOption(ProgramOptions.AS_LARGE_HEADER.getOpt())) {
-			(new LargeHeaderProducer(uri, messageSize)).run();
+			(new LargeHeaderProducer(uri, messageSize, headerSize)).run();
 			System.exit(0);
 		}
 		
 		if (cmd.hasOption(ProgramOptions.AS_MANY_CHANNEL.getOpt())) {
 			new ManyChannel(uri, producerCount, consumerCount, messageSize);
+			System.exit(0);
+		}
+		
+		if (cmd.hasOption(ProgramOptions.AS_TRANSACTION.getOpt())) {
+			new TxProducer(uri, messageSize, getMessageCount(cmd), getCommit(cmd), producerCount);
 			System.exit(0);
 		}
 
@@ -252,6 +265,33 @@ public class Amqpstress {
 			return DEFAULT_MESSAGE_SIZE;
 		}
 	}
+	
+	private static int getMessageCount(CommandLine cmd) {
+		String option = ProgramOptions.MESSAGE_COUNT_OPT.getOpt();
+		if (cmd.hasOption(option)) {
+			return checkForNaturalNumber(cmd, option);
+		} else {
+			return DEFAULT_MESSAGE_COUNT;
+		}
+	}
+	
+	private static boolean getCommit(CommandLine cmd) {
+		String option = ProgramOptions.COMMIT_OPT.getOpt();
+		if (cmd.hasOption(option)) {
+			return Boolean.valueOf(cmd.getOptionValue(option));
+		} else {
+			return false;
+		}
+	}
+	
+	private static int getHeaderSize(CommandLine cmd) {
+		String option = ProgramOptions.HEADER_SIZE_OPT.getOpt();
+		if (cmd.hasOption(option)) {
+			return checkForNaturalNumber(cmd, option);
+		} else {
+			return DEFAULT_HEADER_SIZE;
+		}
+	}
 
 	private static int checkForNaturalNumber(CommandLine cmd, String option) {
 		int naturalNumber = 0;
@@ -297,6 +337,10 @@ public class Amqpstress {
 				.withDescription("Send messages over one Connection and many Channels - set over -p and -c").withLongOpt("manych").create("mc");
 		
 		@SuppressWarnings("static-access")
+		public static final Option AS_TRANSACTION = OptionBuilder.isRequired(false)
+				.withDescription("Used the transaction-mode").withLongOpt("txmode").create("tx");
+		
+		@SuppressWarnings("static-access")
 		public static final Option AS_DOS_QUEUE = OptionBuilder.isRequired(false).withDescription("DoS with queues").withLongOpt("dosqueue").create("dq");
 
 		public static final Option PERSISTENT_MESSAGE_OPT = new Option("mp", "persistent", false, "Set messages persistent");
@@ -319,6 +363,17 @@ public class Amqpstress {
 		@SuppressWarnings("static-access")
 		public static final Option PENDING_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count").withType(Number.class)
 				.withDescription("Set count of cached elements, i. e. the count of message to NACK all at once").withLongOpt("pendingcount").create("pc");
+		
+		@SuppressWarnings("static-access")
+		public static final Option HEADER_SIZE_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("size").withType(Number.class)
+				.withDescription("Set the size of the Headerfield - Number of entrys").withLongOpt("headersize").create("hs");
+		@SuppressWarnings("static-access")
+		public static final Option COMMIT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("commit").withType(Boolean.class)
+				.withDescription("Set for committing messages - true/false").withLongOpt("commit_messages").create("co");
+		@SuppressWarnings("static-access")
+		public static final Option MESSAGE_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count").withType(Number.class)
+				.withDescription("Set the number of messages").withLongOpt("massagescount").create("mct");
+		
 	}
 
 }
