@@ -14,15 +14,16 @@ import de.htwk_leipzig.bis.util.AMQPSubscriber;
 
 public class LargeHeaderProducer extends AMQPSubscriber {
 
-	private static final int HEADER_COUNT = 1000;
 	private static final String QUEUE_NAME = "testq";
 	
 	private final int mMessageSizeInBytes;
-	private final BasicProperties prob;
+	private final int mHeaderSize;
+	private final BasicProperties mProb;
 	
-	public LargeHeaderProducer(URI uri, int messageSizeInBytes) {
+	public LargeHeaderProducer(URI uri, int messageSizeInBytes, int headerSize) {
 		super(uri);
-		this.prob = generateHeader();
+		this.mHeaderSize = headerSize;
+		this.mProb = generateHeader();
 		this.mMessageSizeInBytes = messageSizeInBytes;
 	}
 	
@@ -33,7 +34,7 @@ public class LargeHeaderProducer extends AMQPSubscriber {
 			 
 		 headers.put("x-match", "any"); //any or all
 		 
-		 for (int i = 0; i < HEADER_COUNT; i++) {
+		 for (int i = 0; i < mHeaderSize; i++) {
 			 headers.put("header" + i, UUID.randomUUID().toString() );
 		 }
 
@@ -58,10 +59,10 @@ public class LargeHeaderProducer extends AMQPSubscriber {
 			message = null;
 		}
 		
-		System.out.println("Producer Online");
+		System.out.println("Producer Online - HeaderSize: " + mHeaderSize);
 		
 		while(true){
-			mChannel.basicPublish("", QUEUE_NAME , prob , message);
+			mChannel.basicPublish("", QUEUE_NAME , mProb , message);
 		}	
 	}
 	
