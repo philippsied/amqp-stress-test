@@ -16,113 +16,198 @@
 %	\maketitle\clearpage
 	
 	
-	\section*{Zielstellung und Rahmenbedingungen}
+\section*{Zielstellung und Rahmenbedingungen}
 	
 	Diese Dokumentation beschäftigt sich mit dem Thema \glqq Angriffe auf AMQP-Messagebroker\grqq . Begleitend zur Vorlesung  \glqq Betriebliche Informationssysteme\grqq\/ galt es von uns in einem Praktikum zu identifizieren, welche potenziellen Angriffsvektoren existieren. Eingeschlossen ist hier auch das System \glqq RabbitMQ\grqq\/ welches das zu untersuchende Protokoll einschließt.
 
-Ziel ist es bestimmt Angriffsvektoren aufzuspüren und zu bewerten. Durch Implementierung von einzelnen Clients auf Basis der RabbitMQ Java-Bibliothek sollen die Angriffe veranschaulicht werden.  Mit veränderten Parametern richtet sich die Suche gezielt nach Faktoren die das System negativ beeinflussen und so die Verfügbarkeit stören, fokussiert auf \glqq Denial of Service\grqq. DoS kann dabei auf verschiedene Ressourcen bezogen sein (wie CPU, Arbeitsspeicher, Netzwerkbandbreite, …).
+	Ziel ist es bestimmt Angriffsvektoren aufzuspüren und zu bewerten. Durch Implementierung von einzelnen Clients auf Basis der RabbitMQ Java-Bibliothek sollen die Angriffe veranschaulicht werden.  Mit veränderten Parametern richtet sich die Suche gezielt nach Faktoren die das System negativ beeinflussen und so die Verfügbarkeit stören, fokussiert auf \glqq Denial of Service\grqq. DoS kann dabei auf verschiedene Ressourcen bezogen sein (wie CPU, Arbeitsspeicher, Netzwerkbandbreite, …).
 
-Um die Begrenzungen ausfindig zu machen, gehört es zu Beginn zu unsere Aufgabe angemessene Werkzeuge zur Beobachtung der Ressourcen zu finden. Nur dann ist es möglich die Angriffe zu bewerten und ihre tiefere Auswirkung zu untersuchen.
+	Um die Begrenzungen ausfindig zu machen, gehört es zu Beginn zu unsere Aufgabe angemessene Werkzeuge zur Beobachtung der Ressourcen zu finden. Nur dann ist es möglich die Angriffe zu bewerten und ihre tiefere Auswirkung zu untersuchen.
 
-Ferner sollen Vorschläge zur Schadensbegrenzung gegeben werden. Dazu gehört die Angabe auf welcher Ebene (Netzwerkebene, Protokollebene, …) sich die Gefahren beseitigen lassen.
+	Ferner sollen Vorschläge zur Schadensbegrenzung gegeben werden. Dazu gehört die Angabe auf welcher Ebene (Netzwerkebene, Protokollebene, …) sich die Gefahren beseitigen lassen.
 
-	\clearpage
-	\section*{Testumgebung}
+\clearpage
+\section*{Testumgebung}
+	Als Betriebssystem für die Bereistellung des RabbitMQ-Servers wurde ein Ubuntu Server 14.04.2 LTS mit Kernel 3.13.0-49 verwendet. Das Testsysten wurde dabei alsVirtuelle Maschine (VM) in der Virtualisierungslösung \glqq Virtualbox\grqq\ der Firma Oracle betrieben, um eine einfache Skalierung der Hardware, eine einfache Portabilität des Testsystem und einen reproduzierbaren Systemzustand, über die integrierte Snapshot-Funktion, bereitzustellen. Das Testsystem wurde über die Verwendung der in Virtualbox integrierten NAT-Funktion und der Portweiterleitung für alle von RabbitMQ benötigten Ports nach außen hin verfügbar gemacht. 
 	
+	Für die Beobachtung der CPU-, RAM-, Festplatten, Ressourcenverbrauches auf dem RabbitMQ-Server wurde das Kommandozeilenprogramm \tsl{glances} verwendet. Der Programmaufruf für jeden Test lautete wie folgt:
+	\begin{quote}
+		\tsl{sudo glances -t 5 -\,-disable-process}
+	\end{quote}
+	Es veranlasst die Ansicht aller 5 Sekunden zu erneuern und die Anzeige der aktuell laufenden Prozesse abzuschalten, um den Ressourcenverbrauch durch \textsl{glances} selbst zu reduzieren.
 	
-	\clearpage
-	\section*{Verwendete bzw. Erstellte Programme}
+\clearpage
+\section*{Verwendete bzw. Erstellte Programme}
 	
 	RabbitMQ bietet einige Anwendungen, mit denen sich die Leistungsfähigkeit der Server messen lässt. Alle Hilfsprogramme sind innerhalb der \textit{rabbitmq-client-tests.jar} vorzufinden. Diese JAR-Datei enthält weiterhin zahlreiche kleine Beispielprogramme für das Testen der Funktionalität des eigenen Servers. 
 	
-\paragraph{Perftest} ist ein Performance-Test-Tool, welches beliebig viele Producer und Consumer erstellt und die Sende-/Empfangsrate misst. Zusammen mit der Latenzzeit werden alle Angaben auf der Konsole ausgeben.
+	\paragraph{Perftest} ist ein Performance-Test-Tool, welches beliebig viele Producer und Consumer erstellt und die Sende-/Empfangsrate misst. Zusammen mit der Latenzzeit werden alle Angaben auf der Konsole ausgeben.
 
-\paragraph{HTML Performance Tools} bieten ebenfalls ein breites Spektrum an Funktionalität. Mit einer Reihe von Tools und Unterstützung von perftest lassen sich automatisierte Benchmarks erstellen. Die gelieferten Daten dienen dem Vergleich der Systems vor und während des Angriffs. Alle Ergebnisse werden in einer JSON-Datei gesichert und ansprechend in einer HTML-Seite dargestellt
+	\paragraph{HTML Performance Tools} bieten ebenfalls ein breites Spektrum an Funktionalität. Mit einer Reihe von Tools und Unterstützung von perftest lassen sich automatisierte Benchmarks erstellen. Die gelieferten Daten dienen dem Vergleich der Systems vor und während des Angriffs. Alle Ergebnisse werden in einer JSON-Datei gesichert und ansprechend in einer HTML-Seite dargestellt
 
-\paragraph{VirtualBox} Der von uns verwendete Server wurde durch die Virtualisierungslösung VirtualBox realisiert. Neben der einfachen Installation neuer Gast-Systeme besteht die Möglichkeit Sicherheitspunkte zu erstellen. Bei einem Ausfall des System kann so der ursprüngliche Sicherungspunkt wiederhergestellt werden. Als Grundlage dient die Servervariante von Ubuntu 14.04 LTS, welche durch die fehlende grafische Oberfläche zum einsparen von Ressourcen dient.
+	\paragraph{VirtualBox} Der von uns verwendete Server wurde durch die Virtualisierungslösung VirtualBox realisiert. Neben der einfachen Installation neuer Gast-Systeme besteht die Möglichkeit Sicherheitspunkte zu erstellen. Bei einem Ausfall des System kann so der ursprüngliche Sicherungspunkt wiederhergestellt werden. Als Grundlage dient die Servervariante von Ubuntu 14.04 LTS, welche durch die fehlende grafische Oberfläche zum einsparen von Ressourcen dient.
 
 	
-	\clearpage
-	\section*{Beschreibung der Anwendungsszenarien}
+\clearpage
+\section*{Beschreibung der Anwendungsszenarien}
+
 	\usecase{Direkte Nachrichten 1:1}%
 		{Ein Producer erzeugt kontinuierlich Nachrichten, die von einem Consumer kontinuierlich korrekt entnommen werden.}%
 		{perfTest -h}%
 		{}
-		
-	\usecase{}%
-		{}%
-		{}%
-		{}
-		
-	\usecase{}%
-		{}%
-		{}%
-		{}
+
+
 	
-	\clearpage
-	\section*{Beschreibung der Angriffe}
+\clearpage
+\section*{Beschreibung der Angriffe}
+
+	Beschreibung Standard Anwendung 1 Producer 5 Consumer während Anwendungsszenario läuft. Beschreibung Ressourcenverbrauch.
+
+\clearpage
 	\attack{Ignorieren von Nachrichten}%
-		{Ein Producer erzeugt kontinuierlich Nachrichten, die von einem oder mehreren Consumer empfangen, aber nicht quittiert werden.%
+		{Ein Producer erzeugt kontinuierlich Nachrichten gewisser Größe mit zufälligem Inhalt, die von einem oder mehreren Consumern empfangen, aber nicht quittiert werden.%
 		 Der RabbitMQ-Server ist somit gezwungen, die Nachrichten in der Queue zwischenzuspeichern.}%
-		{}%
-		{Amqpstress -dm No -c 5 -i 1 -ms 1048576 -mp -u amqp://testc:testp@localhost:5672/\%2f}%
-		{}%
-		{Durch Verwendung einer höheren Anzahl an Consumer, kleineren Sendeintervallen, größeren Nachrichtengrößen sowie durch Verwendung von persistenten %
-		Queues kann die Auswirkung des Angriffs erhöht werden.}
+		{%
+		 -dm NO (Aufrufparameter für Angriff) \\
+		 -c 5 (5 Consumer) \\
+		 -i 10 (10ms Pause zwischen 2 Consumer/Producer-Anfragen) \\
+		 -ms 102400 (Messagegröße: 10KB) \\
+		 -u <uri> (URI für Verbindung mit Server) \\
+		 1 Producer (Standard) \\
+		 Nicht-Persistente Nachrichten (Standard)
+		}%
+		{Amqpstress -dm NO -c 5 -i 10 -ms 102400 -u amqp://testc:testp@localhost:5672/\%2f}%
+		{Nachrichten werden bis zur Hälfte des eingestellten Limits (hier ~400MB) im RAM gehalten, bei überschreiten lagert der RabbitMQ-Server im Hintergrund die Nachrichten auf die Festplatte aus. Durch die Freigabe des RAM-Speichers entsteht ein Sägezahnmuster. Dieser Vorgang wiederholt sich bis die Festplatte voll ist und RabbitMQ alle Verbindungen schließt und in diesem Zustand verweilt.CPU-Last liegt konstant bei ca. 10\%.}%
+		{Verwendung von persistenten Nachrichten (-mp) steigert CPU-Last um x\%.}
+		
+		\begin{figure}[!htb]
+			\centering
+			\includegraphics[width=0.9\textwidth]{img/noResp/history_RAM_HDD.png}
+		\end{figure}
 	
-		%------------------------------------------------------------------------------
-	
+%------------------------------------------------------------------------------
+\clearpage	
 	\attack{Sofortiges Abweisen von Nachrichten}%
-		{Ein Producer erzeugt kontinuierlich Nachrichten, die von einem oder mehreren Consumer empfangen, aber sofort abgewiesen (basic.Reject) werden.%
+		{Ein Producer erzeugt kontinuierlich Nachrichten gewisser Größe mit zufälligem Inhalt, die von einem oder mehreren Consumern empfangen, aber sofort abgewiesen (basic.Reject) werden.%
 		 Der RabbitMQ-Server ist somit gezwungen, die Nachrichten in der Queue zwischenzuspeichern und erneut an den Consumer zu senden.}%
+		{%
+		 -dm REJECT (Aufrufparameter für Angriff) \\
+		 -c 5 (5 Consumer) \\
+		 -i 10 (10ms Pause zwischen 2 Consumer/Producer-Anfragen) \\
+		 -ms 102400 (Messagegröße: 10KB) \\
+		 -u <uri> (URI für Verbindung mit Server) \\
+		 1 Producer (Standard) \\
+		 Nicht-Persistente Nachrichten (Standard)
+		}%
+		{Amqpstress -dm REJECT -c 5 -i 10 -ms 102400 -mp -u amqp://testc:testp@localhost:5672/\%2f}%
 		{}%
-		{Amqpstress -dm REJECT -c 5 -i 1 -ms 1048576 -mp -u amqp://testc:testp@localhost:5672/\%2f}%
-		{}%
-		{Durch Verwendung einer höheren Anzahl an Consumer, kleineren Sendeintervallen, größeren Nachrichtengrößen sowie durch Verwendung von persistenten %
-		Queues kann die Auswirkung des Angriffs erhöht werden.}
+		{Verwendung von persistenten Nachrichten (-mp) steigert CPU-Last um x\%.}
 	
-		%------------------------------------------------------------------------------
-	
+%------------------------------------------------------------------------------
+\clearpage	
 	\attack{Gebündeltes Abweisen von Nachrichten}%
-		{Ein Producer erzeugt kontinuierlich Nachrichten, die von einem oder mehreren Consumer empfangen, zunächst ignoriert werden, um sie bei erreichen eines Schwellwertes gebündelt abzuweisen (basic.NACK). Dadurch ist der RabbitMQ-Server gewzungen alle Nachrichten zwischenzuspeichern und stoßweise alle Nachrichten bis zu einer gewissen Nachrichtenkennung erneut zuzustellen.}%
-		{}%
-		{Amqpstress -dm NACK -c 5 -i 1 -ms 1048576 -mp -u amqp://testc:testp@localhost:5672/\%2f}%
+		{Ein Producer erzeugt kontinuierlich Nachrichten gewisser Größe mit zufälligem Inhalt, die von einem oder mehreren Consumer empfangen, zunächst ignoriert werden, um sie bei erreichen eines Schwellwertes gebündelt abzuweisen (basic.NACK). Dadurch ist der RabbitMQ-Server gezwungen alle Nachrichten zwischenzuspeichern und stoßweise alle Nachrichten bis zu der aktuellen Sequenznummer erneut zuzustellen.}%
+		{%
+		 -dm NACK (Aufrufparameter für Angriff) \\
+		 Schwellwert: 1000 Nachrichten (Standard) \\
+		 -c 5 (5 Consumer) \\
+		 -i 10 (10ms Pause zwischen 2 Consumer/Producer-Anfragen) \\
+		 -ms 102400 (Messagegröße: 10KB) \\
+		 -u <uri> (URI für Verbindung mit Server) \\
+		 1 Producer (Standard) \\
+		 Nicht-Persistente Nachrichten (Standard)
+		}%
+		{Amqpstress -dm NACK -c 5 -i 10 -ms 102400 -u amqp://testc:testp@localhost:5672/\%2f}%
 		{}
 		
-		%------------------------------------------------------------------------------
-		
+%------------------------------------------------------------------------------
+\clearpage
+	\attack{Anlegen und Löschen von Queues}%
+		{Ein Client erzeugt bis zu einem Schwellwert Queues und befüllt sie mit einer zufälligen Nachricht gegebener Größe. Wenn der Schwellwert erreicht ist, werden alle Queues ohne zu Warten gelöscht und der Zyklus beginnt erneut. Der RabbitMQ-Server muss die Überreste der Queues im RAM bzw. der Festplatte bereinigen, während neue Queues angelegt und befüllt werden.}%
+		{%
+		 -dq (Aufrufparameter für Angriff) \\
+		 -pc 10 (Schwellwert: 10 Queues) \\
+		 -i 10 (10ms Pause zwischen 2 Consumer/Producer-Anfragen) \\
+		 -ms 0 (Keine Nachrichten senden) \\
+		 -u <uri> (URI für Verbindung mit Server) \\
+		 1 Client - Consumer und Producer zugleich (Standard) \\
+		 Nicht-Persistente Nachrichten (Standard)
+		}%
+		{Amqpstress -dq -pc 10 -i 10 -ms 0  -u amqp://testc:testp@localhost:5672/\%2f}%
+		{}
+
+%------------------------------------------------------------------------------
+\clearpage
 	\attack{Versenden von  Nachrichten mit großem Header}%
 		{RabbitMQ bietet die Möglichkeit im Header der Nachricht bestimmt Parameter für die Weiterleitung zu deklarieren. Dieser Test beschäftigt sich mit der Auswirkung, wenn der Header unnötig ausgelastet wird. Das System ist gezwungen alle Weiterleitungsoptionen zu Prüfen, auch wenn diese keinem Ziel entsprechen.}%
-		{\parbox[c][1.3cm][c]{10.5cm}{-lh (Aufrufparameter für Headererzeugung) \\ -ms 10000 (Messagegröße in Byte - hier: 10000) \\ -u (URI für Verbindung mit Server)}}%
+		{%
+		 -lh (Aufrufparameter für Angriff) \\
+		 -ms 10000 (Messagegröße: 10000 Byte) \\
+		 -u <uri> (URI für Verbindung mit Server)
+		}%
 		{Amqpstress -lh -ms 10000 -u amqp://testc:testp@localhost:5672}%
 		{Die Anwendung generiert zu Beginn 1000 Weiterleitungsoptionen und schreibt sie in den Header jeder Nachricht. Hierdurch ist das System stark ausgelastet und der Durchsatz der Nachrichten schrumpft stark auf 3 - 5 Nachrichten pro Sekunde.}
 		{Die Headergröße ist bei 2500 Weiterleitungsoptionen begrenzt. Wir diese überschritten lässt das System die Verbindung fallen, aufgrund einer zu großen Framegröße.}
-		
-		%------------------------------------------------------------------------------
-		
+
+%------------------------------------------------------------------------------
+\clearpage		
 	\attack{Aufbauen mehrerer Channel über eine einzelne Verbindung}%
 		{Neben einzelnen Verbindungen können in RabbitMQ auch mehrerer Kanäle aufgebaut werden. Hier stellt sich die Frage, wie das System mit einer Vielzahl von Kanäle zurecht kommt. Auf Basis einer einzelnen Verbindung wird das System so ausgelastet und beobachtet. }%
-		{\parbox[c][2cm][c]{10.5cm}{-mc (Aufrufparameter für Generierung mehrerer Channel) \\ -ms 10000 (Messagegröße in Byte - hier: 10000) \\ -u (URI für Verbindung mit Server) \\ -p 100 (Anzahl Producer - hier:100) \\ -c 10 (Anzahl Consumer - hier: 10)}}%
+		{%
+		 -mc (Aufrufparameter für Angriff) \\
+		 -ms 10000 (Messagegröße: 10000 Byte) \\
+		 -u <uri> (URI für Verbindung mit Server) \\
+		 -p 100 (100 Producer) \\
+		 -c 10 (10 Consumer)
+		}%
 		{Amqpstress -mc -p 100 -c 10 -ms 10000 -u amqp://testc:testp@localhost:5672}%
 		{Das System ist stark ausgelastet. Ähnelt aber der Auslastung unter der Erstellung mehrerer Verbindungen. Allerdings beansprucht  der Aufbau der Channel extrem viel Zeit. Nach Aufbau aller Kanäle bricht die Übertragungsrate stark ein.}
 		{Zeit für Aufbau der Channel hängt stark von der Anzahl von Producer und Consumer ab.}
 
-	%------------------------------------------------------------------------------
-		
+%------------------------------------------------------------------------------
+\clearpage
 	\attack{Commit mehrerer Nachrichten im Transaktionsmodus}%
 		{Im Transaktionsmodus ist es möglich mehrere Nachrichten als Folge zu übertragen, die aber vergleichbar mit Datenbanken als Einheit betrachtet werden. Nur durch die Commit()-Funktion wird der neue Zustand angenommen und die Nachrichten im System zur Verfügung gestellt. Ferner kann mit der Rollback()-Funktion der ursprüngliche Zustand wiederhergestellt werden.}%
-		{\parbox[c][2.3cm][c]{10.5cm}{-tx (Aufrufparameter für Transaktionsmodus) \\ -ms 10000 (Messagegröße in Byte - hier: 10000) \\ -mct 10000 (Nachrichtenanzahl pro Producer - hier: 10000) \\ -co false (Commit der Transaktion - hier: Auslassen)\\ -p 100 (Anzahl Producer - hier: 100 )}}%
-		{-tx -p 100 -ms 10000 -mct 10000 -co false -u amqp://testc:testp@localhost:5672}%
+		{%
+		 -tx (Aufrufparameter für Angriff) \\
+		 -p 100 (100 Producer) \\
+		 -ms 10000 (Messagegröße: 10000 Byte) \\
+		 -mct 10000 (Nachrichtenanzahl pro Producer: 10000) \\
+		 -co false (Commit der Transaktion - hier: Auslassen) \\
+		 -u <uri> (URI für Verbindung mit Server)
+		}%
+		{Amqpstress -tx -p 100 -ms 10000 -mct 10000 -co false -u amqp://testc:testp@localhost:5672}%
 		{Durch Auslassen des Commits steigt der Speicherverbrauch stark an. Nach wenigen Sekunden ist die Speichergrenze erreicht und keine weiteren Nachrichten werden übertragen. Daraufhin verharren alle Producer bis der Speicher wieder freigegeben wird (Falls Consumer vorhanden) }
-		{Sporadisch friert der RabbitMQ-Server bei diesem Versuch ein. Ein Aufbau einer neuen Verbindung schlägt fehl und die Weboberfläche ist nicht mehr erreichbar. }
+		{Sporadisch friert der RabbitMQ-Server bei diesem Versuch ein. Ein Aufbau einer neuen Verbindung schlägt fehl und die Weboberfläche ist nicht mehr erreichbar.}
+
+%------------------------------------------------------------------------------
+\clearpage
+	\attack{Verzögerung des Verbindungsaufbaues}%
+		{.}%
+		{%
+		 -u <uri> (URI für Verbindung mit Server)
+		}%
+		{Amqpstress  -u amqp://testc:testp@localhost:5672}%
+		{}
+		{}
+		
+%------------------------------------------------------------------------------
+\clearpage
+	\attack{Ausnutzung des Hearthbeats}%
+		{.}%
+		{%
+		 -u <uri> (URI für Verbindung mit Server)
+		}%
+		{Amqpstress  -u amqp://testc:testp@localhost:5672}%
+		{}
+		{}
+		
+\clearpage
+\section*{Auswirkungen der Angriffe}
 	
 	
-	\clearpage
-	\section*{Auswirkungen der Angriffe}
 	
-	
-	
-	\clearpage
-	\section*{Zusammenfassung und Fazit}
+\clearpage
+\section*{Zusammenfassung und Fazit}
 
 \end{document}

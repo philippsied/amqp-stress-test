@@ -11,18 +11,19 @@
 		\begin{tabular}{cl}
 			{\Large \bfseries S\theusecasecounter} & {\bfseries #1} \\
 			\hline
-			\textsl{Beschreibung} &  \parbox[c][3cm][c]{10.5cm}{#2} \\
+			\textsl{Beschreibung} &  \parbox[t]{10.5cm}{#2} \\
 			\textsl{Aktion} & \footnotesize{\texttt{#3}} \\
-			\textsl{Anmerkungen} & \parbox[c][2cm][c]{10.5cm}{#4}
+			\textsl{Anmerkungen} & \parbox[t]{10.5cm}{#4}
 		\end{tabular}}
 \newcounter{attack}
 \newcommand{\attack}[6]{\stepcounter{attack}%
 		\begin{tabular}{cl}
+			\hline
 			{\Large \bfseries A\theattack} & {\bfseries #1} \\
 			\hline
-			\textsl{Beschreibung} &  \parbox[c][3cm][c]{10.5cm}{#2} \\
-			\textsl{Testparameter} & \footnotesize{\textsc{#3}} \\
-			\textsl{Befehlszeile} & \parbox[l][1cm][c]{10.5cm}{\footnotesize\texttt{#4}} \\
-			\textsl{Beobachtungen} & \parbox[c][2cm][c]{10.5cm}{#5} \\
-			\textsl{Anmerkungen} & \parbox[c][2cm][c]{10.5cm}{#6}
-		\end{tabular} \medskip}
+			\textsl{Beschreibung} &  \parbox[t]{10.5cm}{#2} \\
+			\textsl{Testparameter} & \parbox[t]{10.5cm}{#3} \\
+			\textsl{Befehlszeile} & \parbox[t]{10.5cm}{\footnotesize\texttt{#4}} \\
+			\textsl{Beobachtungen} & \parbox[t]{10.5cm}{#5} \\
+			\textsl{Anmerkungen} & \parbox[t]{10.5cm}{#6}
+		\end{tabular} \medskip\\}
