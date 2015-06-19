@@ -21,6 +21,7 @@ import org.apache.commons.cli.ParseException;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
+import de.htwk_leipzig.bis.channel.ManyChannel;
 import de.htwk_leipzig.bis.dos.msg_response.MessageActionACK;
 import de.htwk_leipzig.bis.dos.msg_response.MessageActionNACK;
 import de.htwk_leipzig.bis.dos.msg_response.MessageActionNoResponse;
@@ -28,9 +29,11 @@ import de.htwk_leipzig.bis.dos.msg_response.MessageActionReject;
 import de.htwk_leipzig.bis.dos.msg_response.MessageConsumer;
 import de.htwk_leipzig.bis.dos.msg_response.MessageProducer;
 import de.htwk_leipzig.bis.dos.msg_response.ResponseAction;
+import de.htwk_leipzig.bis.dos.queue.QueueAction;
+import de.htwk_leipzig.bis.dos.queue.QueueActionAddMsg;
+import de.htwk_leipzig.bis.dos.queue.QueueActionNo;
 import de.htwk_leipzig.bis.dos.queue.QueueSwapper;
 import de.htwk_leipzig.bis.header.LargeHeaderProducer;
-import de.htwk_leipzig.bis.channel.ManyChannel;
 import de.htwk_leipzig.bis.timing.TimingClient;
 import de.htwk_leipzig.bis.timing.TimingServer;
 import de.htwk_leipzig.bis.transaction.TxProducer;
@@ -134,55 +137,39 @@ public class Amqpstress {
 			System.exit(0);
 		}
 		if (cmd.hasOption(ProgramOptions.AS_DOS_MSG.getOpt())) {
-			final ResponseAction action = getResponseType(cmd);
+			final ResponseAction responseAction = getResponseType(cmd);
 			System.out.printf("Producer: %d\nConsumer: %d\ninterval: %d\nMessagesize: %d\nPersistent: %s\nAction: %s\n\n", producerCount, consumerCount,
-					interval, messageSize, Boolean.toString(userPersistent), action.toString());
+					interval, messageSize, Boolean.toString(userPersistent), responseAction.toString());
 
-			final ExecutorService es = Executors.newCachedThreadPool();
-			Runtime.getRuntime().addShutdownHook(new Thread() {
-				@Override
-				public void run() {
-					System.out.println("Terminate main");
-					es.shutdown();
-				}
-			});
-			for (int i = 0; i < consumerCount; i++) {
-				es.execute(new MessageConsumer(uri, interval, userPersistent, action));
-			}
 			/*
-			 * + 10% delay for producer, used to adjust send and receive rate
+			 * + 5% delay for producer, used to adjust send and receive rate
 			 */
-			int prodInterval = (int) Math.ceil(interval * 1.1);
+			int prodInterval = (int) Math.ceil(interval * 1.05);
+			startClients(consumerCount, producerCount, new MessageConsumer(uri, interval, userPersistent, responseAction), new MessageProducer(uri,
+					prodInterval, userPersistent, messageSize));
 
-			for (int i = 0; i < producerCount; i++) {
-				es.execute(new MessageProducer(uri, prodInterval, userPersistent, messageSize));
-			}
-			try {
-				es.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-			} catch (InterruptedException e) {
-				System.out.println("Timeout reached");
-			}
 			System.exit(0);
 		}
-		
+
 		if (cmd.hasOption(ProgramOptions.AS_LARGE_HEADER.getOpt())) {
 			(new LargeHeaderProducer(uri, messageSize, headerSize)).run();
 			System.exit(0);
 		}
-		
+
 		if (cmd.hasOption(ProgramOptions.AS_MANY_CHANNEL.getOpt())) {
 			new ManyChannel(uri, producerCount, consumerCount, messageSize);
 			System.exit(0);
 		}
-		
+
 		if (cmd.hasOption(ProgramOptions.AS_TRANSACTION.getOpt())) {
 			new TxProducer(uri, messageSize, getMessageCount(cmd), getCommit(cmd), producerCount);
 			System.exit(0);
 		}
 
 		if (cmd.hasOption(ProgramOptions.AS_DOS_QUEUE.getOpt())) {
+			final QueueAction action = getQueueAction(cmd);
 			System.out.printf("QueueSwapper\ninterval: %d\nMessagesize: %d\nPersistent: %s\n\n", interval, messageSize, Boolean.toString(userPersistent));
-			new QueueSwapper(uri, messageSize, interval, userPersistent, getPendingCount(cmd)).run();
+			(new QueueSwapper(uri, interval, userPersistent, getPendingCount(cmd), action)).run();
 			System.exit(0);
 		}
 
@@ -190,6 +177,43 @@ public class Amqpstress {
 		 * if none of the options were used
 		 */
 		printHelp(options);
+	}
+
+	private static void startClients(int consumerCount, int producerCount, Runnable runConsumer, Runnable runProducer) {
+		final ExecutorService es = Executors.newCachedThreadPool();
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				System.out.println("Terminate main");
+				es.shutdown();
+			}
+		});
+		for (int i = 0; i < consumerCount; i++) {
+			es.execute(runConsumer);
+		}
+		for (int i = 0; i < producerCount; i++) {
+			es.execute(runProducer);
+		}
+		try {
+			es.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+		} catch (InterruptedException e) {
+			System.out.println("Timeout reached");
+		}
+	}
+
+	private static QueueAction getQueueAction(CommandLine cmd) {
+		String option = ProgramOptions.AS_DOS_QUEUE.getOpt();
+		switch (cmd.getOptionValue(option).toLowerCase()) {
+		case "no":
+			return new QueueActionNo();
+		case "msg":
+			return new QueueActionAddMsg(getMessageSize(cmd), getUsePersistent(cmd));
+		default:
+			System.err.println("Invalid argument: \"" + cmd.getOptionValue(option) + "\" for option -" + option);
+			System.err.println("Only \"NO\", \"msg\" allowed");
+			System.exit(-1);
+		}
+		return null;
 	}
 
 	private static ResponseAction getResponseType(CommandLine cmd) {
@@ -265,7 +289,7 @@ public class Amqpstress {
 			return DEFAULT_MESSAGE_SIZE;
 		}
 	}
-	
+
 	private static int getMessageCount(CommandLine cmd) {
 		String option = ProgramOptions.MESSAGE_COUNT_OPT.getOpt();
 		if (cmd.hasOption(option)) {
@@ -274,7 +298,7 @@ public class Amqpstress {
 			return DEFAULT_MESSAGE_COUNT;
 		}
 	}
-	
+
 	private static boolean getCommit(CommandLine cmd) {
 		String option = ProgramOptions.COMMIT_OPT.getOpt();
 		if (cmd.hasOption(option)) {
@@ -283,7 +307,7 @@ public class Amqpstress {
 			return false;
 		}
 	}
-	
+
 	private static int getHeaderSize(CommandLine cmd) {
 		String option = ProgramOptions.HEADER_SIZE_OPT.getOpt();
 		if (cmd.hasOption(option)) {
@@ -329,19 +353,20 @@ public class Amqpstress {
 				.withDescription("DoS with messages, type is one of \"ACK\",\"NO\",\"NACK\",\"REJECT\"").withLongOpt("dosmsg").create("dm");
 
 		@SuppressWarnings("static-access")
-		public static final Option AS_LARGE_HEADER = OptionBuilder.isRequired(false)
-				.withDescription("Send messages with large header").withLongOpt("largeheader").create("lh");
-		
+		public static final Option AS_LARGE_HEADER = OptionBuilder.isRequired(false).withDescription("Send messages with large header")
+				.withLongOpt("largeheader").create("lh");
+
 		@SuppressWarnings("static-access")
 		public static final Option AS_MANY_CHANNEL = OptionBuilder.isRequired(false)
 				.withDescription("Send messages over one Connection and many Channels - set over -p and -c").withLongOpt("manych").create("mc");
-		
+
 		@SuppressWarnings("static-access")
-		public static final Option AS_TRANSACTION = OptionBuilder.isRequired(false)
-				.withDescription("Used the transaction-mode").withLongOpt("txmode").create("tx");
-		
+		public static final Option AS_TRANSACTION = OptionBuilder.isRequired(false).withDescription("Used the transaction-mode").withLongOpt("txmode")
+				.create("tx");
+
 		@SuppressWarnings("static-access")
-		public static final Option AS_DOS_QUEUE = OptionBuilder.isRequired(false).withDescription("DoS with queues").withLongOpt("dosqueue").create("dq");
+		public static final Option AS_DOS_QUEUE = OptionBuilder.isRequired(false).hasArgs(1).withArgName("queueAction")
+				.withDescription("DoS with queues, type is one of \"NO\",\"MSG\"").withLongOpt("dosqueue").create("dq");
 
 		public static final Option PERSISTENT_MESSAGE_OPT = new Option("mp", "persistent", false, "Set messages persistent");
 
@@ -363,7 +388,7 @@ public class Amqpstress {
 		@SuppressWarnings("static-access")
 		public static final Option PENDING_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count").withType(Number.class)
 				.withDescription("Set count of cached elements, i. e. the count of message to NACK all at once").withLongOpt("pendingcount").create("pc");
-		
+
 		@SuppressWarnings("static-access")
 		public static final Option HEADER_SIZE_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("size").withType(Number.class)
 				.withDescription("Set the size of the Headerfield - Number of entrys").withLongOpt("headersize").create("hs");
@@ -373,7 +398,7 @@ public class Amqpstress {
 		@SuppressWarnings("static-access")
 		public static final Option MESSAGE_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count").withType(Number.class)
 				.withDescription("Set the number of messages").withLongOpt("massagescount").create("mct");
-		
+
 	}
 
 }

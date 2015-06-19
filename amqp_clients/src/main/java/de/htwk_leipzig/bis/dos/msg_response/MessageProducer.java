@@ -49,20 +49,18 @@ public class MessageProducer extends AMQPSubscriber {
 	 */
 	@Override
 	protected void doSubscriberActions() throws Exception {
-		mChannel.exchangeDelete(EXCHANGE_NAME);
 		mChannel.exchangeDeclare(EXCHANGE_NAME, "fanout", mUsePersistentMessage, false, null);
-
-		byte[] message;
-
-		if (mMessageSizeInBytes > 0) {
-			message = new byte[mMessageSizeInBytes];
-			new Random().nextBytes(message);
-		} else {
-			message = null;
-		}
+	
 		System.out.println("Producer Online");
-
 		while (true) {
+			byte[] message;
+
+			if (mMessageSizeInBytes > 0) {
+				message = new byte[mMessageSizeInBytes];
+				new Random().nextBytes(message);
+			} else {
+				message = null;
+			}
 			if (mUsePersistentMessage) {
 				mChannel.basicPublish(EXCHANGE_NAME, "", MessageProperties.PERSISTENT_BASIC, message);
 			} else {

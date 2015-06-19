@@ -36,6 +36,7 @@ public class MessageConsumer extends AMQPSubscriber {
 	@Override
 	protected void doSubscriberActions() throws Exception {
 		String queueName = RandomStringUtils.randomAlphabetic(15);
+		mChannel.exchangeDeclare(EXCHANGE_NAME, "fanout", mUsePersistentQueue, false, null);
 		mChannel.queueDeclare(queueName, mUsePersistentQueue, false, true, null);
 		mChannel.queueBind(queueName, EXCHANGE_NAME, "");
 		final QueueingConsumer consumer = new QueueingConsumer(mChannel);
