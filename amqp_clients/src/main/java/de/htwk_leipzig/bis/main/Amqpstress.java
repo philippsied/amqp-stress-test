@@ -22,6 +22,10 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
 import de.htwk_leipzig.bis.channel.ManyChannel;
+import de.htwk_leipzig.bis.connections.heartbeat.HeartbeatStressor;
+import de.htwk_leipzig.bis.connections.slowConnection.HandshakeActionSleep;
+import de.htwk_leipzig.bis.connections.slowConnection.SlowConnectionFactory;
+import de.htwk_leipzig.bis.connections.slowConnection.SlowTrickleConnection;
 import de.htwk_leipzig.bis.dos.msg_response.MessageActionACK;
 import de.htwk_leipzig.bis.dos.msg_response.MessageActionNACK;
 import de.htwk_leipzig.bis.dos.msg_response.MessageActionNoResponse;
@@ -68,6 +72,8 @@ public class Amqpstress {
 		optionGrp.addOption(ProgramOptions.AS_LARGE_HEADER);
 		optionGrp.addOption(ProgramOptions.AS_MANY_CHANNEL);
 		optionGrp.addOption(ProgramOptions.AS_TRANSACTION);
+		optionGrp.addOption(ProgramOptions.AS_SLOW_CONNECTION);
+		optionGrp.addOption(ProgramOptions.AS_STRESS_HEARTBEAT);
 		options.addOptionGroup(optionGrp);
 		options.addOption(ProgramOptions.PRODUCER_COUNT_OPT);
 		options.addOption(ProgramOptions.CONSUMER_COUNT_OPT);
@@ -173,6 +179,18 @@ public class Amqpstress {
 			System.exit(0);
 		}
 
+		if (cmd.hasOption(ProgramOptions.AS_SLOW_CONNECTION.getOpt())) {
+			System.out.printf("Slow Trickle\ninterval: %d\n\n", interval, messageSize, Boolean.toString(userPersistent));
+			(new SlowTrickleConnection(uri, interval, new HandshakeActionSleep(interval))).run();
+			System.exit(0);
+		}
+		
+		if (cmd.hasOption(ProgramOptions.AS_STRESS_HEARTBEAT.getOpt())) {
+			System.out.printf("Stress with Heartbeats\ninterval: %d\n\n", interval, messageSize, Boolean.toString(userPersistent));
+			(new HeartbeatStressor(uri)).run();
+			System.exit(0);
+		}
+		
 		/*
 		 * if none of the options were used
 		 */
@@ -364,6 +382,15 @@ public class Amqpstress {
 		public static final Option AS_TRANSACTION = OptionBuilder.isRequired(false).withDescription("Used the transaction-mode").withLongOpt("txmode")
 				.create("tx");
 
+		@SuppressWarnings("static-access")
+		public static final Option AS_SLOW_CONNECTION = OptionBuilder.isRequired(false).withDescription("Slow down the connection handshake").withLongOpt("slowcon")
+				.create("sl");
+
+		@SuppressWarnings("static-access")
+		public static final Option AS_STRESS_HEARTBEAT = OptionBuilder.isRequired(false).withDescription("use heartbeats to stress server").withLongOpt("heartbeat")
+				.create("hb");
+		
+		
 		@SuppressWarnings("static-access")
 		public static final Option AS_DOS_QUEUE = OptionBuilder.isRequired(false).hasArgs(1).withArgName("queueAction")
 				.withDescription("DoS with queues, type is one of \"NO\",\"MSG\"").withLongOpt("dosqueue").create("dq");
