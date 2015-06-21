@@ -22,6 +22,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
 import de.htwk_leipzig.bis.channel.ManyChannel;
+import de.htwk_leipzig.bis.connections.dropconnection.ConnectionHanging;
 import de.htwk_leipzig.bis.connections.heartbeat.HeartbeatStressor;
 import de.htwk_leipzig.bis.connections.slowConnection.HandshakeActionSleep;
 import de.htwk_leipzig.bis.connections.slowConnection.SlowConnectionFactory;
@@ -52,6 +53,7 @@ public class Amqpstress {
 
 	private static final int DEFAULT_PRODUCER_COUNT = 1;
 	private static final int DEFAULT_CONSUMER_COUNT = 5;
+	private static final int DEFAULT_CLIENT_COUNT = 1;
 	private static final int DEFAULT_MESSAGE_SIZE = 1024;
 	private static final int DEFAULT_MESSAGE_COUNT = 1000;
 	private static final int DEFAULT_INTERVAL = 100;
@@ -74,13 +76,15 @@ public class Amqpstress {
 		optionGrp.addOption(ProgramOptions.AS_TRANSACTION);
 		optionGrp.addOption(ProgramOptions.AS_SLOW_CONNECTION);
 		optionGrp.addOption(ProgramOptions.AS_STRESS_HEARTBEAT);
+		optionGrp.addOption(ProgramOptions.AS_DROP_CONNECTIONS);
 		options.addOptionGroup(optionGrp);
+		options.addOption(ProgramOptions.CLIENT_COUNT_OPT);
 		options.addOption(ProgramOptions.PRODUCER_COUNT_OPT);
 		options.addOption(ProgramOptions.CONSUMER_COUNT_OPT);
 		options.addOption(ProgramOptions.MESSAGE_SIZE_OPT);
 		options.addOption(ProgramOptions.INTERVAL_OPT);
 		options.addOption(ProgramOptions.PENDING_COUNT_OPT);
-		options.addOption(ProgramOptions.PERSISTENT_MESSAGE_OPT);
+		options.addOption(ProgramOptions.PERSISTENT_OPT);
 		options.addOption(ProgramOptions.URI_OPT);
 		options.addOption(ProgramOptions.HEADER_SIZE_OPT);
 		options.addOption(ProgramOptions.COMMIT_OPT);
@@ -129,7 +133,9 @@ public class Amqpstress {
 		final int interval = getInterval(cmd);
 		final int producerCount = getProducerCount(cmd);
 		final int consumerCount = getConsumerCount(cmd);
-
+		final int clientCount = getClientCount(cmd);
+		
+		
 		/*
 		 * Do specified action
 		 */
@@ -186,8 +192,14 @@ public class Amqpstress {
 		}
 		
 		if (cmd.hasOption(ProgramOptions.AS_STRESS_HEARTBEAT.getOpt())) {
-			System.out.printf("Stress with Heartbeats\ninterval: %d\n\n", interval, messageSize, Boolean.toString(userPersistent));
-			(new HeartbeatStressor(uri)).run();
+			System.out.printf("Stress with Heartbeats\nConnections: %d\n\n", clientCount);
+			(new HeartbeatStressor(uri, clientCount)).run();
+			System.exit(0);
+		}
+		
+		if (cmd.hasOption(ProgramOptions.AS_DROP_CONNECTIONS.getOpt())) {
+			System.out.printf("Drop Connections\ninterval: %d\n\n", interval);
+			(new ConnectionHanging(uri, interval)).run();
 			System.exit(0);
 		}
 		
@@ -196,6 +208,7 @@ public class Amqpstress {
 		 */
 		printHelp(options);
 	}
+
 
 	private static void startClients(int consumerCount, int producerCount, Runnable runConsumer, Runnable runProducer) {
 		final ExecutorService es = Executors.newCachedThreadPool();
@@ -255,11 +268,21 @@ public class Amqpstress {
 	}
 
 	private static boolean getUsePersistent(CommandLine cmd) {
-		String option = ProgramOptions.PERSISTENT_MESSAGE_OPT.getOpt();
+		String option = ProgramOptions.PERSISTENT_OPT.getOpt();
 		if (cmd.hasOption(option)) {
 			return true;
 		} else {
 			return DEFAULT_USE_PERSISTENT_MESSAGE;
+		}
+	}
+	
+
+	private static int getClientCount(CommandLine cmd) {
+		String option = ProgramOptions.CLIENT_COUNT_OPT.getOpt();
+		if (cmd.hasOption(option)) {
+			return checkForNaturalNumber(cmd, option);
+		} else {
+			return DEFAULT_CLIENT_COUNT;
 		}
 	}
 
@@ -387,15 +410,18 @@ public class Amqpstress {
 				.create("sl");
 
 		@SuppressWarnings("static-access")
-		public static final Option AS_STRESS_HEARTBEAT = OptionBuilder.isRequired(false).withDescription("use heartbeats to stress server").withLongOpt("heartbeat")
+		public static final Option AS_STRESS_HEARTBEAT = OptionBuilder.isRequired(false).withDescription("use small heartbeats to stress server").withLongOpt("heartbeat")
 				.create("hb");
 		
+		@SuppressWarnings("static-access")
+		public static final Option AS_DROP_CONNECTIONS = OptionBuilder.isRequired(false).withDescription("open connection and immediately close the Socket (Without keep-alive, max. heartbeat) and send TCP RST").withLongOpt("dropcon")
+				.create("dc");
 		
 		@SuppressWarnings("static-access")
 		public static final Option AS_DOS_QUEUE = OptionBuilder.isRequired(false).hasArgs(1).withArgName("queueAction")
 				.withDescription("DoS with queues, type is one of \"NO\",\"MSG\"").withLongOpt("dosqueue").create("dq");
 
-		public static final Option PERSISTENT_MESSAGE_OPT = new Option("mp", "persistent", false, "Set messages persistent");
+		public static final Option PERSISTENT_OPT = new Option("mp", "persistent", false, "Set messages/queues persistent");
 
 		@SuppressWarnings("static-access")
 		public static final Option MESSAGE_SIZE_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("size in bytes").withType(Number.class)
@@ -403,9 +429,13 @@ public class Amqpstress {
 
 		@SuppressWarnings("static-access")
 		public static final Option INTERVAL_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("milliseconds").withType(Number.class)
-				.withDescription("Set interval for communication between consumer and producer, interpreted as milliseconds").withLongOpt("minterval")
+				.withDescription("Set interval for a simple action, interpreted as milliseconds").withLongOpt("minterval")
 				.create('i');
 
+		@SuppressWarnings("static-access")
+		public static final Option CLIENT_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count").withType(Number.class)
+				.withDescription("Set count of parallel running clients").withLongOpt("clients").create("cl");
+		
 		@SuppressWarnings("static-access")
 		public static final Option PRODUCER_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count").withType(Number.class)
 				.withDescription("Set count of parallel running producers").withLongOpt("producer").create('p');
