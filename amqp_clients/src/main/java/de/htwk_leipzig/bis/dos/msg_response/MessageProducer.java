@@ -13,24 +13,46 @@ import com.rabbitmq.client.MessageProperties;
 import de.htwk_leipzig.bis.util.AMQPSubscriber;
 
 /**
- *
+ * The MessageProducer class represents a AMQP Producer that repeatedly sends
+ * messages by a fanout exchange to the consumer.
+ * 
+ * <p>
+ * It is a specialisation of {@code AMQPSubscriber}.
  *
  */
 public class MessageProducer extends AMQPSubscriber {
-	private static final String EXCHANGE_NAME = "messaging";
 
+	/**
+	 * The name of the used exchange.
+	 */
+	public static final String EXCHANGE_NAME = "messaging";
+
+	/**
+	 * Member variable to hold the interval between two Generate&Publish events.
+	 */
 	private final int mProduceInterval;
+
+	/**
+	 * Member variable to hold the used size of message content - Measured in
+	 * bytes.
+	 */
 	private final int mMessageSizeInBytes;
+
+	/**
+	 * Member variable to indicate whether the communication is persistent or
+	 * not.
+	 */
 	private final boolean mUsePersistentMessage;
 
 	/**
 	 * 
 	 * @param uri
+	 *            of the RabbitMQ-Server.
 	 * @param produceIntervalInSec
 	 *            Interval between two produced messages, specified in
 	 *            milliseconds. The value "0" means as fast as possible.
-	 * 
 	 * @param usePersistentMessage
+	 *            Flag to indicate that the communication is persistent.
 	 * @param messageSizeInBytes
 	 *            The size of the message to be sent. The value "0" means no
 	 *            message payload.
@@ -44,13 +66,15 @@ public class MessageProducer extends AMQPSubscriber {
 		mUsePersistentMessage = usePersistentMessage;
 	}
 
-	/**
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.htwk_leipzig.bis.util.AMQPSubscriber#doSubscriberActions()
 	 */
 	@Override
 	protected void doSubscriberActions() throws Exception {
 		mChannel.exchangeDeclare(EXCHANGE_NAME, "fanout", mUsePersistentMessage, false, null);
-	
+
 		System.out.println("Producer Online");
 		while (true) {
 			byte[] message;

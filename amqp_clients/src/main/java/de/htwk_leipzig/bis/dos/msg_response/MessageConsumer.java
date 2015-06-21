@@ -15,8 +15,7 @@ import de.htwk_leipzig.bis.util.AMQPSubscriber;
  * The MessageConsumer class represents a AMQP Consumer that allows a
  * customizable response for a consumed message.
  * 
- * 
- * It is a specialisation of {@code AMQPSubscriber}
+ * <p>It is a specialisation of {@code AMQPSubscriber}.
  *
  */
 public class MessageConsumer extends AMQPSubscriber {
@@ -52,16 +51,16 @@ public class MessageConsumer extends AMQPSubscriber {
 	private final ResponseAction mResponse;
 
 	/**
-	 * Main Constructor. Used to create an instance of {@code MessageConsumer}
+	 * Main Constructor. Used to create an instance of {@code MessageConsumer}.
 	 * 
 	 * @param uri
-	 *            of the RabbitMQ-Server
+	 *            of the RabbitMQ-Server.
 	 * @param consumeIntervalInMiliSec
-	 * 			 between two Consume&Response events
+	 * 			 between two Consume&Response events.
 	 * @param usePersistentQueue
-	 *            Flag to indicate that the communication is persistent
+	 *            Flag to indicate that the communication is persistent.
 	 * @param action
-	 *            the response action to use for every consumed message
+	 *            the response action to use for every consumed message.
 	 */
 	public MessageConsumer(final URI uri, final int consumeIntervalInMiliSec, final boolean usePersistentQueue, final ResponseAction action) {
 		super(uri);
