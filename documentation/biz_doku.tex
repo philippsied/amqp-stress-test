@@ -10,6 +10,8 @@
 \usepackage{package/ownstil}
 \usepackage{package/owncmd}
 
+\usepackage{float}
+
 %\input{package/header}
 
 \begin{document}
@@ -143,11 +145,27 @@
 		{%
 		 -lh (Aufrufparameter für Angriff) \\
 		 -ms 10000 (Messagegröße: 10000 Byte) \\
+		 -hs 2500 (Headergröße - Anzahl Einträge in Map) \\
 		 -u <uri> (URI für Verbindung mit Server)
 		}%
-		{Amqpstress -lh -ms 10000 -u amqp://testc:testp@localhost:5672}%
-		{Die Anwendung generiert zu Beginn 1000 Weiterleitungsoptionen und schreibt sie in den Header jeder Nachricht. Hierdurch ist das System stark ausgelastet und der Durchsatz der Nachrichten schrumpft stark auf 3 - 5 Nachrichten pro Sekunde.}
-		{Die Headergröße ist bei 2500 Weiterleitungsoptionen begrenzt. Wir diese überschritten lässt das System die Verbindung fallen, aufgrund einer zu großen Framegröße.}
+		{Amqpstress -lh -ms 10000 -hs 2500 -u amqp://testc:testp@localhost:5672}%
+		{Die Anwendung generiert zu Beginn 2500 Weiterleitungsoptionen (Bestehend aus 8 Byte Key und 36 Byte Value = 44 Byte pro Eintrag) und schreibt sie in den Header jeder Nachricht. Hierdurch ist das System stark ausgelastet und der Durchsatz der Nachrichten schrumpft stark auf 10 - 20 Nachrichten pro Sekunde. Es macht keinen Unterschied ob der Key oder Value vergrößert wird, die geringe Übertragungsrate bleibt bestehen. Der Value wird daher nicht ausgewertet. Die CPU Last liegt bei 10 -15\%}
+		{Die Headergröße ist bei etwa 2500 Weiterleitungsoptionen begrenzt. Wird diese überschritten lässt das System die Verbindung fallen, aufgrund einer zu großen Framegröße. Die Framegröße lässt sich beim Aufbau der Verbindung angeben, kann aber die bereits voreingestellten eingestellten 128 Byte nicht überschreiten.}
+
+%\vspace{-0.35cm}
+\begin{table}[h]
+\centering
+\begin{tabular}{lll|l}
+\multicolumn{3}{l|}{\begin{tabular}[c]{@{}l@{}}Übertragungsrate nach Nachrichtengröße\end{tabular}} & Headergröße     \\
+10.000 Byte                       & 1.000 Byte                       & 100 Byte                       & Einträge (Byte) \\ \hline
+140m/s                            & 260m/s                           & 350m/s                         & 200 (8.800)     \\
+80m/s                             & 120m/s                           & 180m/s                         & 500 (22.000)    \\
+30m/s                             & 50m/s                            & 70m/s                          & 1.000 (44.000)  \\
+20m/                              & 30m/s                            & 40m/s                          & 2.000 (88.000)  \\
+10m/s                             & 10m/s                            & 20m/s                          & 2.500 (110.000) \\ \hline
+270m/s                            & 3.000m/s                         & 10.000m/s                      & kein Eintrag   
+\end{tabular}
+\end{table}
 
 %------------------------------------------------------------------------------
 \clearpage		
@@ -161,13 +179,47 @@
 		 -c 10 (10 Consumer)
 		}%
 		{Amqpstress -mc -p 100 -c 10 -ms 10000 -u amqp://testc:testp@localhost:5672}%
-		{Das System ist stark ausgelastet. Ähnelt aber der Auslastung unter der Erstellung mehrerer Verbindungen. Allerdings beansprucht  der Aufbau der Channel extrem viel Zeit. Nach Aufbau aller Kanäle bricht die Übertragungsrate stark ein.}
-		{Zeit für Aufbau der Channel hängt stark von der Anzahl von Producer und Consumer ab.}
+		{Das System ist stark ausgelastet. Ähnelt aber der Auslastung unter der Erstellung mehrerer Verbindungen. Allerdings beansprucht  der Aufbau der Channel extrem viel Zeit. Nach Aufbau aller Kanäle bricht die Übertragungsrate stark ein. Dabei liegt die CPU-Last bei etwa 45 - 55\%}
+		{Zeit für Aufbau der Channel hängt stark von der Anzahl von Producer und Consumer ab. Nachfolgend zeigt sich ein Vergleich von mehreren Kanälen sowie mehreren Verbindungen.}
+
+\begin{table}[h]
+\centering
+\caption{Mehrere Channel}
+\begin{tabular}{llll}
+\begin{tabular}[c]{@{}l@{}}Übertragungsrate\\ (schreiben)\end{tabular} & Producer & Consumer & \begin{tabular}[c]{@{}l@{}}Nachrichtengröße\\ (Byte)\end{tabular} \\ \hline
+7.000m/s                                                               & 100      & 10       & 100                                                               \\
+800m/s                                                                 & 100      & 10       & 1.000                                                             \\
+100m/s                                                                 & 100      & 10       & 10.000                                                           
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+	\vspace{0.5cm}
+	\centering
+	\includegraphics[width=0.9\textwidth]{img/channel/100ch100ms}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Mehrere Verbindungen}
+\begin{tabular}{llll}
+\begin{tabular}[c]{@{}l@{}}Übertragungsrate\\ (schreiben)\end{tabular} & Producer & Consumer & \begin{tabular}[c]{@{}l@{}}Nachrichtengröße\\ (Byte)\end{tabular} \\ \hline
+24.000m/s                                                              & 100      & 10       & 100                                                               \\
+2.000m/s                                                               & 100      & 10       & 1.000                                                             \\
+100m/s                                                                 & 100      & 10       & 10.000                                                           
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+	\vspace{0.5cm}
+	\centering
+	\includegraphics[width=0.9\textwidth]{img/channel/100con100ms}
+\end{figure}
 
 %------------------------------------------------------------------------------
 \clearpage
 	\attack{Commit mehrerer Nachrichten im Transaktionsmodus}%
-		{Im Transaktionsmodus ist es möglich mehrere Nachrichten als Folge zu übertragen, die aber vergleichbar mit Datenbanken als Einheit betrachtet werden. Nur durch die Commit()-Funktion wird der neue Zustand angenommen und die Nachrichten im System zur Verfügung gestellt. Ferner kann mit der Rollback()-Funktion der ursprüngliche Zustand wiederhergestellt werden.}%
+		{Im Transaktionsmodus ist es möglich mehrere Nachrichten als Folge zu übertragen, die aber vergleichbar mit Datenbanken als Einheit betrachtet werden. Nur durch die Commit()-Funktion wird der neue Zustand angenommen und die Nachrichten im System zur Verfügung gestellt. Ferner kann mit der Rollback()-Funktion der ursprüngliche Zustand wiederhergestellt werden. Zu untersuchen wäre die Situation, wenn permanent Nachrichten ohne commit gesendet werden - der Server muss die Nachrichten dann im Speicher belassen. }%
 		{%
 		 -tx (Aufrufparameter für Angriff) \\
 		 -p 100 (100 Producer) \\
@@ -178,7 +230,13 @@
 		}%
 		{Amqpstress -tx -p 100 -ms 10000 -mct 10000 -co false -u amqp://testc:testp@localhost:5672}%
 		{Durch Auslassen des Commits steigt der Speicherverbrauch stark an. Nach wenigen Sekunden ist die Speichergrenze erreicht und keine weiteren Nachrichten werden übertragen. Daraufhin verharren alle Producer bis der Speicher wieder freigegeben wird (Falls Consumer vorhanden) }
-		{Sporadisch friert der RabbitMQ-Server bei diesem Versuch ein. Ein Aufbau einer neuen Verbindung schlägt fehl und die Weboberfläche ist nicht mehr erreichbar.}
+		{Sporadisch friert der RabbitMQ-Server bei diesem Versuch ein. Ein Aufbau einer neuen Verbindung schlägt fehl und die Weboberfläche ist nicht mehr erreichbar. Nach längerer Zeit (etwa 10 Minuten) baut der Server aber wieder die Verbindungen ab und ein Zugriff ist wieder möglich. Dennoch bleibt der Speicherverbrauch bestehen.}
+
+\begin{figure}[H]
+	\vspace{0.5cm}
+	\centering
+	\includegraphics[width=0.9\textwidth]{img/commit/noCommit100p}
+\end{figure}
 
 %------------------------------------------------------------------------------
 \clearpage
