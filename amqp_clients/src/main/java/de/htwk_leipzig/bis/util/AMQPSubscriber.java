@@ -29,12 +29,13 @@ public abstract class AMQPSubscriber implements Runnable {
 	protected final URI mUri;
 
 	/**
-	 * Default constructor.
+	 * Default constructor. Only used by specializations of
+	 * {@code AMQPSubscriber}.
 	 * 
 	 * @param uri
-	 *            of the RabbitMQ-Server.
+	 *            the uri of the RabbitMQ-Server.
 	 */
-	public AMQPSubscriber(final URI uri) {
+	protected AMQPSubscriber(final URI uri) {
 		mUri = uri;
 	}
 
@@ -46,8 +47,7 @@ public abstract class AMQPSubscriber implements Runnable {
 	@Override
 	public void run() {
 		try {
-			final ConnectionFactory factory = ToolBox
-					.createConnectionFactory(mUri);
+			final ConnectionFactory factory = ToolBox.createConnectionFactory(mUri);
 			final Connection connection = factory.newConnection();
 			try {
 				mChannel = connection.createChannel();
