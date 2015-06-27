@@ -15,7 +15,8 @@ import de.htwk_leipzig.bis.util.AMQPSubscriber;
  * The MessageConsumer class represents a AMQP Consumer that allows a
  * customizable response for a consumed message.
  * 
- * <p>It is a specialisation of {@code AMQPSubscriber}.
+ * <p>
+ * It is a specialization of {@code AMQPSubscriber}.
  *
  */
 public class MessageConsumer extends AMQPSubscriber {
@@ -41,7 +42,8 @@ public class MessageConsumer extends AMQPSubscriber {
 	private final int mConsumeInterval;
 
 	/**
-	 * Member variable to indicate whether the communication is persistent or not.
+	 * Member variable to indicate whether the communication is persistent or
+	 * not.
 	 */
 	private final boolean mUsePersistentQueue;
 
@@ -51,23 +53,25 @@ public class MessageConsumer extends AMQPSubscriber {
 	private final ResponseAction mResponse;
 
 	/**
-	 * Main Constructor. Used to create an instance of {@code MessageConsumer}.
+	 * Creates a new instance of {@code MessageConsumer} with the given uri,
+	 * given consume interval, the given response action and allow to specify
+	 * whether the communication is persistent or not.
 	 * 
 	 * @param uri
-	 *            of the RabbitMQ-Server.
+	 *            the uri of the RabbitMQ-Server.
 	 * @param consumeIntervalInMiliSec
-	 * 			 between two Consume&Response events.
+	 *            interval between two Consume&Response events.
 	 * @param usePersistentQueue
 	 *            Flag to indicate that the communication is persistent.
-	 * @param action
-	 *            the response action to use for every consumed message.
+	 * @param responseAction
+	 *            response action to use for every consumed message.
 	 */
-	public MessageConsumer(final URI uri, final int consumeIntervalInMiliSec, final boolean usePersistentQueue, final ResponseAction action) {
+	public MessageConsumer(final URI uri, final int consumeIntervalInMiliSec, final boolean usePersistentQueue, final ResponseAction responseAction) {
 		super(uri);
-		checkArgument(0 <= consumeIntervalInMiliSec,"Interval must be greater or equal 0");
+		checkArgument(0 <= consumeIntervalInMiliSec, "Interval must be greater or equal 0");
 		mConsumeInterval = consumeIntervalInMiliSec;
 		mUsePersistentQueue = usePersistentQueue;
-		mResponse = checkNotNull(action);
+		mResponse = checkNotNull(responseAction);
 	}
 
 	/*
@@ -78,10 +82,10 @@ public class MessageConsumer extends AMQPSubscriber {
 	@Override
 	protected void doSubscriberActions() throws Exception {
 		String queueName = RandomStringUtils.randomAlphabetic(15);
-		mChannel.exchangeDeclare(EXCHANGE_NAME, "fanout", mUsePersistentQueue,false, null);
+		mChannel.exchangeDeclare(EXCHANGE_NAME, "fanout", mUsePersistentQueue, false, null);
 		mChannel.queueDeclare(queueName, mUsePersistentQueue, false, true, null);
 		mChannel.queueBind(queueName, EXCHANGE_NAME, "");
-		mChannel.basicQos(DEFAULT_PREFETCH_AMOUNT, DEFAULT_PREFETCH_COUNT,false);
+		mChannel.basicQos(DEFAULT_PREFETCH_AMOUNT, DEFAULT_PREFETCH_COUNT, false);
 		final QueueingConsumer consumer = new QueueingConsumer(mChannel);
 		mChannel.basicConsume(queueName, false, consumer);
 
