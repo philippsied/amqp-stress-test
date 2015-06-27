@@ -6,7 +6,7 @@
 			listof=totoc,
 			parskip,
 			chapterprefix=false,
-			numbers=noenddot]{scrreprt}
+			numbers=noenddot]{scrartcl}
 \usepackage{package/ownstil}
 \usepackage{package/owncmd}
 
@@ -22,43 +22,75 @@
 	
 	Diese Dokumentation beschäftigt sich mit dem Thema \glqq Angriffe auf AMQP-Messagebroker\grqq . Begleitend zur Vorlesung  \glqq Betriebliche Informationssysteme\grqq\/ galt es von uns in einem Praktikum zu identifizieren, welche potenziellen Angriffsvektoren existieren. Eingeschlossen ist hier auch das System \glqq RabbitMQ\grqq\/ welches das zu untersuchende Protokoll einschließt.
 
-	Ziel ist es bestimmt Angriffsvektoren aufzuspüren und zu bewerten. Durch Implementierung von einzelnen Clients auf Basis der RabbitMQ Java-Bibliothek sollen die Angriffe veranschaulicht werden.  Mit veränderten Parametern richtet sich die Suche gezielt nach Faktoren die das System negativ beeinflussen und so die Verfügbarkeit stören, fokussiert auf \glqq Denial of Service\grqq. DoS kann dabei auf verschiedene Ressourcen bezogen sein (wie CPU, Arbeitsspeicher, Netzwerkbandbreite, …).
+	Ziel ist es bestimmt Angriffsvektoren aufzuspüren und zu bewerten. Durch Implementierung von einzelnen Clients auf Basis der RabbitMQ Java-Bibliothek sollen die Angriffe veranschaulicht werden.  Mit veränderten Parametern richtet sich die Suche gezielt nach Faktoren die das System negativ beeinflussen und so die Verfügbarkeit stören, fokussiert auf \glqq Denial of Service\grqq. DoS kann dabei auf verschiedene Ressourcen bezogen sein (wie CPU, Arbeitsspeicher, Netzwerkbandbreite etc.).
 
 	Um die Begrenzungen ausfindig zu machen, gehört es zu Beginn zu unsere Aufgabe angemessene Werkzeuge zur Beobachtung der Ressourcen zu finden. Nur dann ist es möglich die Angriffe zu bewerten und ihre tiefere Auswirkung zu untersuchen.
 
-	Ferner sollen Vorschläge zur Schadensbegrenzung gegeben werden. Dazu gehört die Angabe auf welcher Ebene (Netzwerkebene, Protokollebene, …) sich die Gefahren beseitigen lassen.
+	Ferner sollen Vorschläge zur Schadensbegrenzung gegeben werden. Dazu gehört die Angabe auf welcher Ebene (Netzwerkebene, Protokollebene etc.) sich die Gefahren beseitigen lassen.
 
 \clearpage
 \section*{Testumgebung}
-	Als Betriebssystem für die Bereistellung des RabbitMQ-Servers wurde ein Ubuntu Server 14.04.2 LTS mit Kernel 3.13.0-49 verwendet. Das Testsysten wurde dabei alsVirtuelle Maschine (VM) in der Virtualisierungslösung \glqq Virtualbox\grqq\ der Firma Oracle betrieben, um eine einfache Skalierung der Hardware, eine einfache Portabilität des Testsystem und einen reproduzierbaren Systemzustand, über die integrierte Snapshot-Funktion, bereitzustellen. Das Testsystem wurde über die Verwendung der in Virtualbox integrierten NAT-Funktion und der Portweiterleitung für alle von RabbitMQ benötigten Ports nach außen hin verfügbar gemacht. 
-	
-	Für die Beobachtung der CPU-, RAM-, Festplatten, Ressourcenverbrauches auf dem RabbitMQ-Server wurde das Kommandozeilenprogramm \tsl{glances} verwendet. Der Programmaufruf für jeden Test lautete wie folgt:
+	Als Betriebssystem für die Bereistellung des RabbitMQ-Servers wurde ein Ubuntu Server 14.04.2 LTS mit Kernel 3.16.0-30 verwendet. Das Testsysten wurde dabei als Virtuelle Maschine (VM) in der Virtualisierungslösung \glqq Virtualbox\grqq\ der Firma Oracle betrieben, um eine einfache Skalierung der Hardware, eine einfache Portabilität des Testsystem und einen reproduzierbaren Systemzustand, über die integrierte Snapshot-Funktion, bereitzustellen. Für die Konfiguration wurden die in Tabelle \ref{tab:testvm} dargestellten Einstellungen gewählt. 
+	\begin{table}[!htb]
+	\centering
+	\begin{tabular}{p{3cm}|p{6cm}}
+		\tsl{Host} 		& rabbitmqserver (192.168.178.153) \\\hline
+		\tsl{Anz. CPU} 		& 2 \\
+		\tsl{RAM} 		& 2048 MB \\
+		\tsl{Grafikspeicher} 	& 12 MB \\
+		\tsl{HDD} 		& 8,00 GB \\
+		\tsl{Netzwerk}		& 1GB über Bridging durch lokales Netzwerk-Interface
+	\end{tabular}
+	\caption{Konfiguration der Test-VM}
+	\label{tab:testvm}
+	\end{table}
+
+	Für die reproduzierbare Einrichtung der Testumgebung wurde ein BASH-Skript erstellt, welches sich im Repository des zugehörigen GitHub-Projektes befindet. Es setzt eine frische Installation 
+	des Ubuntu Server voraus - ohne eine Vorauswahl an Softwarepacketen (z.\,B. LAMP). Vor der Ausführung des Skriptes sollte ein Snapshot erstellt werden. Anschließend kann es in der VM über:
 	\begin{quote}
-		\tsl{sudo glances -t 5 -\,-disable-process}
+		\ttfamily 		
+		\$\,> wget \url{https://raw.githubusercontent.com/philippsied/amqp-stress-test/master/utilities/setupTestEnv.sh}
 	\end{quote}
-	Es veranlasst die Ansicht aller 5 Sekunden zu erneuern und die Anzeige der aktuell laufenden Prozesse abzuschalten, um den Ressourcenverbrauch durch \textsl{glances} selbst zu reduzieren.
+	aus dem Git-Repository heruntergeladen werden. Da das Skript für die Einstellung des Netzwerkinterface Root-Rechte benötigt (Sudo-Rechte genügen nicht), muss der Root-User zuvor aktivert werden. Abschließend kann das Skript mit Sudo-Rechten ausgeführt werden:
+	\begin{quote}
+		\ttfamily 
+		\$\,> sudo passwd root\\
+		\$\,> sudo bash setupTestEnv.sh
+	\end{quote}
+	
+	Nach Abschluss der Einrichtung erfolgt eine übersichtliche Ausgabe aller Informationen, einschließlich RabbitMQ-Benutzerdaten und Adressen.
+	
 	
 \clearpage
 \section*{Verwendete bzw. Erstellte Programme}
 	
 	RabbitMQ bietet einige Anwendungen, mit denen sich die Leistungsfähigkeit der Server messen lässt. Alle Hilfsprogramme sind innerhalb der \textit{rabbitmq-client-tests.jar} vorzufinden. Diese JAR-Datei enthält weiterhin zahlreiche kleine Beispielprogramme für das Testen der Funktionalität des eigenen Servers. 
 	
+	\paragraph{VirtualBox} Der von uns verwendete Server wurde durch die Virtualisierungslösung VirtualBox realisiert. Neben der einfachen Installation neuer Gast-Systeme besteht die Möglichkeit Sicherheitspunkte zu erstellen. Bei einem Ausfall des System kann so der ursprüngliche Sicherungspunkt wiederhergestellt werden. Als Grundlage dient die Servervariante von Ubuntu 14.04 LTS, welche durch die fehlende grafische Oberfläche zum einsparen von Ressourcen dient.
+	
+	\paragraph{Glances} ...
+	
 	\paragraph{Perftest} ist ein Performance-Test-Tool, welches beliebig viele Producer und Consumer erstellt und die Sende-/Empfangsrate misst. Zusammen mit der Latenzzeit werden alle Angaben auf der Konsole ausgeben.
 
 	\paragraph{HTML Performance Tools} bieten ebenfalls ein breites Spektrum an Funktionalität. Mit einer Reihe von Tools und Unterstützung von perftest lassen sich automatisierte Benchmarks erstellen. Die gelieferten Daten dienen dem Vergleich der Systems vor und während des Angriffs. Alle Ergebnisse werden in einer JSON-Datei gesichert und ansprechend in einer HTML-Seite dargestellt
 
-	\paragraph{VirtualBox} Der von uns verwendete Server wurde durch die Virtualisierungslösung VirtualBox realisiert. Neben der einfachen Installation neuer Gast-Systeme besteht die Möglichkeit Sicherheitspunkte zu erstellen. Bei einem Ausfall des System kann so der ursprüngliche Sicherungspunkt wiederhergestellt werden. Als Grundlage dient die Servervariante von Ubuntu 14.04 LTS, welche durch die fehlende grafische Oberfläche zum einsparen von Ressourcen dient.
-
+	
+	\paragraph{AMQPstress} ...
 	
 \clearpage
-\section*{Beschreibung der Anwendungsszenarien}
+\section*{Beschreibung des Benchmarking}
 
 	\usecase{Direkte Nachrichten 1:1}%
 		{Ein Producer erzeugt kontinuierlich Nachrichten, die von einem Consumer kontinuierlich korrekt entnommen werden.}%
 		{perfTest -h}%
 		{}
 
-
+	Für die Beobachtung des Ressourcenverbrauches auf dem RabbitMQ-Server wurde das Kommandozeilenprogramm \tsl{glances} verwendet. Der Programmaufruf für jeden Test lautete wie folgt:
+	\begin{quote}
+		\ttfamily
+		\$\,> sudo glances -t 5 -\,-disable-process
+	\end{quote}
+	Er veranlasst, die Ansicht alle 5 Sekunden zu erneuern und die Anzeige der aktuell laufenden Prozesse abzuschalten, um den Ressourcenverbrauch durch \textsl{glances} selbst zu reduzieren.
 	
 \clearpage
 \section*{Beschreibung der Angriffe}
