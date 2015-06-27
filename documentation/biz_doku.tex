@@ -68,14 +68,14 @@
 	
 	\paragraph{VirtualBox} Der von uns verwendete Server wurde durch die Virtualisierungslösung VirtualBox realisiert. Neben der einfachen Installation neuer Gast-Systeme besteht die Möglichkeit Sicherheitspunkte zu erstellen. Bei einem Ausfall des System kann so der ursprüngliche Sicherungspunkt wiederhergestellt werden. Als Grundlage dient die Servervariante von Ubuntu 14.04 LTS, welche durch die fehlende grafische Oberfläche zum einsparen von Ressourcen dient.
 	
-	\paragraph{Glances} ...
-	
+	\paragraph{Glances} Glances ist ein System-Monitoring-Tool, das zahlreiche Informationen auf engstem Raum präsentiert. Im einfachsten Fall werden die gesammelten System-Informationen auf der Konsole ausgeben. Ferner ermöglicht ein integriertes Web-Interface eine Fernüberwachung der Umgebung. Zu den gesammelten Informationen gehören unter anderem: CPU-Auslastung, Kernel-Version, Speicherverbrauch (HDD, RAM) und laufende Prozesse. Hierbei werden alle Informationen im Sekundentakt aktualisiert.
+
 	\paragraph{Perftest} ist ein Performance-Test-Tool, welches beliebig viele Producer und Consumer erstellt und die Sende-/Empfangsrate misst. Zusammen mit der Latenzzeit werden alle Angaben auf der Konsole ausgeben.
 
 	\paragraph{HTML Performance Tools} bieten ebenfalls ein breites Spektrum an Funktionalität. Mit einer Reihe von Tools und Unterstützung von perftest lassen sich automatisierte Benchmarks erstellen. Die gelieferten Daten dienen dem Vergleich der Systems vor und während des Angriffs. Alle Ergebnisse werden in einer JSON-Datei gesichert und ansprechend in einer HTML-Seite dargestellt
 
 	
-	\paragraph{AMQPstress} ...
+	\paragraph{AMQPstress} Um die Auswirkungen der gewählten Angriffsvektoren testen zu können, wurde für jeden Angriff ein eigener Client implementiert. Grundlage bildet die Java-Library von RabbitMQ, die geeignete Funktionen zur Ansprache des Servers bereitstellt. Alle erstellten Clients lassen sich über bestimmte Parameter aufrufen und mit weiteren Einstellungen versehen. Welche Einstellungen zutreffen, lässt sich anhand dieses Dokuments erschließen. Auch zeigt sich, welche Parameter für einen erfolgreichen Angriff nötig sind. Hierzu gehört unter anderem die Anzahl an Producer und Consumer oder auch die gewählte Nachrichtengröße.
 	
 \clearpage
 \section*{Beschreibung des Benchmarking}
