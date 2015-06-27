@@ -49,11 +49,11 @@ if [ $? != 0 ]; then
 fi
 
 # Renew package cache
-apt-get -q update
+apt-get update -q
 
 # Install deb-package
 dpkg -i $debfile
-apt-get -fqy install
+apt-get install -fqy
 
 # Create new user for tests
 rabbitmqctl add_user $rbusername $rbuserpw
@@ -79,9 +79,9 @@ echo -e "\n\n--------------------------------------------------"
 echo -e "Setup Done\n"
 echo "Server is listening on: $ipaddress:$rbmqport"
 echo "Management interface is available on: $ipaddress:$rbmqmngtport"
-echo "RabbitMQ adminstrator: $rbadminname|$rbadminpw"
-echo "RabbitMQ user: $rbusername|$rbuserpw"
-echo "Glances can be locally run with: 'sudo glances'"
+echo -e "RabbitMQ adminstrator\n\t $rbadminname : $rbadminpw"
+echo -e "RabbitMQ user\n\t $rbusername : $rbuserpw"
+echo "Glances can be run with: 'sudo glances'"
 
 
 exit 0
