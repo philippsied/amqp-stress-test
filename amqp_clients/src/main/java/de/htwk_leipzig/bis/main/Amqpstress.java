@@ -21,7 +21,8 @@ import org.apache.commons.cli.ParseException;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
-import de.htwk_leipzig.bis.channel.ManyChannel;
+import de.htwk_leipzig.bis.channel.ChannelConsumer;
+import de.htwk_leipzig.bis.channel.ChannelProducer;
 import de.htwk_leipzig.bis.connections.dropconnection.ConnectionHanging;
 import de.htwk_leipzig.bis.connections.heartbeat.HeartbeatStressor;
 import de.htwk_leipzig.bis.connections.slowConnection.HandshakeActionSleep;
@@ -165,12 +166,16 @@ public class Amqpstress {
 		}
 
 		if (cmd.hasOption(ProgramOptions.AS_LARGE_HEADER.getOpt())) {
-			(new LargeHeaderProducer(uri, messageSize, headerSize)).run();
+			System.out.println("Producer Online - HeaderSize: " + headerSize);
+			startClients(0, producerCount, null , new LargeHeaderProducer(uri, messageSize, headerSize));
 			System.exit(0);
 		}
 
 		if (cmd.hasOption(ProgramOptions.AS_MANY_CHANNEL.getOpt())) {
-			new ManyChannel(uri, producerCount, consumerCount, messageSize);
+			System.out.println("Starting Producers and Consumers");
+			final Connection connection = ToolBox.createConnectionFactory(uri).newConnection();
+			startClients(consumerCount, producerCount, new ChannelConsumer(connection), new ChannelProducer(connection, messageSize));
+			connection.close();
 			System.exit(0);
 		}
 
