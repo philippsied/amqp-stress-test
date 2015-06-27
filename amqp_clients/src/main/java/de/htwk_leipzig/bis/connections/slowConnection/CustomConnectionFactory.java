@@ -13,11 +13,11 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 
 import de.htwk_leipzig.bis.connections.slowConnection.clientRewrite.AMQConnection;
 
-public class SlowConnectionFactory extends ConnectionFactory {
+public class CustomConnectionFactory extends ConnectionFactory {
 
 	private HandshakeAction mHandshakeAction;
 
-	public SlowConnectionFactory(final HandshakeAction handshakeAction) {
+	public CustomConnectionFactory(final HandshakeAction handshakeAction) {
 		super();
 		mHandshakeAction = handshakeAction;
 	}
