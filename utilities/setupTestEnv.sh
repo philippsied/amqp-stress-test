@@ -49,11 +49,11 @@ if [ $? != 0 ]; then
 fi
 
 # Renew package cache
-apt-get update
+apt-get -q update
 
 # Install deb-package
 dpkg -i $debfile
-apt-get -fy install
+apt-get -fqy install
 
 # Create new user for tests
 rabbitmqctl add_user $rbusername $rbuserpw
@@ -72,14 +72,17 @@ rabbitmqctl change_password guest $rbguestpw
 rabbitmq-plugins enable rabbitmq_management
 
 # Install glances
-apt-get install -y python-pip build-essential python-dev
-pip install glances bottle
+apt-get install -qy python-pip build-essential python-dev
+pip install -q glances bottle
 
-
-echo "Setup Done"
+echo -e "\n\n--------------------------------------------------"
+echo -e "Setup Done\n"
 echo "Server is listening on: $ipaddress:$rbmqport"
 echo "Management interface is available on: $ipaddress:$rbmqmngtport"
+echo "RabbitMQ adminstrator: $rbadminname|$rbadminpw"
+echo "RabbitMQ user: $rbusername|$rbuserpw"
 echo "Glances can be locally run with: 'sudo glances'"
+
 
 exit 0
 
