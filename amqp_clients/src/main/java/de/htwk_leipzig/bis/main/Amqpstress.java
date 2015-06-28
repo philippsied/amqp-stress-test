@@ -180,7 +180,7 @@ public class Amqpstress {
 		}
 
 		if (cmd.hasOption(ProgramOptions.AS_TRANSACTION.getOpt())) {
-			new TxProducer(uri, messageSize, getMessageCount(cmd), getCommit(cmd), producerCount);
+			startClients(0, producerCount, null, new TxProducer(uri, messageSize, getMessageCount(cmd), getCommit(cmd)));
 			System.exit(0);
 		}
 
