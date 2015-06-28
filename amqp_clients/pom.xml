@@ -3,7 +3,15 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.htwk_leipzig.bis</groupId>
 	<artifactId>amqp_clients</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>dev</version>
+	<packaging>jar</packaging>
+
+	<name>AMQPstress</name>
+	<description>Stress parts of the RabbitMQ server</description>
+	<organization>
+		<name>HTWK Leipzig</name>
+		<url>http://www.htwk-leipzig.de</url>
+	</organization>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
@@ -42,4 +50,31 @@
 			<version>3.4</version>
 		</dependency>
 	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.4</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<shadedArtifactAttached>true</shadedArtifactAttached>
+							<shadedClassifierName>executable</shadedClassifierName>
+							<transformers>
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>de.htwk_leipzig.bis.main.Amqpstress</mainClass>
+								</transformer>
+							</transformers>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>
