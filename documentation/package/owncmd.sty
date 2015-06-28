@@ -7,13 +7,15 @@
 \newcommand{\tsl}[1]{\textsl{#1}}
 \newcommand{\ensu}{\ding{229}}
 \newcounter{usecasecounter}
-\newcommand{\usecase}[4]{\stepcounter{usecasecounter}%
+\newcommand{\usecase}[6]{\stepcounter{usecasecounter}%
 		\begin{tabular}{cl}
 			{\Large \bfseries S\theusecasecounter} & {\bfseries #1} \\
 			\hline
 			\textsl{Beschreibung} &  \parbox[t]{10.5cm}{#2} \\
-			\textsl{Aktion} & \footnotesize{\texttt{#3}} \\
-			\textsl{Anmerkungen} & \parbox[t]{10.5cm}{#4}
+			\textsl{Parameter} & \parbox[t]{10.5cm}{#3} \\
+			\textsl{Aktion} & \parbox[t]{10.5cm}{\footnotesize{\texttt{#4}}} \\
+			\textsl{Ressourcenbedarf} & \parbox[t]{10.5cm}{#5}\\
+			\textsl{Anmerkungen} & \parbox[t]{10.5cm}{#6}
 		\end{tabular}}
 \newcounter{attack}
 \newcommand{\attack}[6]{\stepcounter{attack}%
@@ -24,6 +26,8 @@
 			\textsl{Beschreibung} &  \parbox[t]{10.5cm}{#2} \\
 			\textsl{Testparameter} & \parbox[t]{10.5cm}{#3} \\
 			\textsl{Befehlszeile} & \parbox[t]{10.5cm}{\footnotesize\texttt{#4}} \\
-			\textsl{Beobachtungen} & \parbox[t]{10.5cm}{#5} \\
-			\textsl{Anmerkungen} & \parbox[t]{10.5cm}{#6}
+			\textsl{Ressourcenbedarf} & \parbox[t]{10.5cm}{#5} \\
+			\textsl{Beobachtungen} & \parbox[t]{10.5cm}{#6} 
 		\end{tabular} \medskip\\}
+		
+\newcommand{\measure}[2]{\textsc{#1:} #2}

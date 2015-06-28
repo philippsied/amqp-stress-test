@@ -5,7 +5,6 @@
 			fleqn,
 			listof=totoc,
 			parskip,
-			chapterprefix=false,
 			numbers=noenddot]{scrartcl}
 \usepackage{package/ownstil}
 \usepackage{package/owncmd}
@@ -69,7 +68,7 @@
 	\paragraph{VirtualBox} Der von uns verwendete Server wurde durch die Virtualisierungslösung VirtualBox realisiert. Neben der einfachen Installation neuer Gast-Systeme besteht die Möglichkeit Sicherheitspunkte zu erstellen. Bei einem Ausfall des System kann so der ursprüngliche Sicherungspunkt wiederhergestellt werden. Als Grundlage dient die Servervariante von Ubuntu 14.04 LTS, welche durch die fehlende grafische Oberfläche zum einsparen von Ressourcen dient.
 	
 	\paragraph{Glances} Glances ist ein System-Monitoring-Tool, das zahlreiche Informationen auf engstem Raum präsentiert. Im einfachsten Fall werden die gesammelten System-Informationen auf der Konsole ausgeben. Ferner ermöglicht ein integriertes Web-Interface eine Fernüberwachung der Umgebung. Zu den gesammelten Informationen gehören unter anderem: CPU-Auslastung, Kernel-Version, Speicherverbrauch (HDD, RAM) und laufende Prozesse. Hierbei werden alle Informationen im Sekundentakt aktualisiert.
-
+	
 	\paragraph{Perftest} ist ein Performance-Test-Tool, welches beliebig viele Producer und Consumer erstellt und die Sende-/Empfangsrate misst. Zusammen mit der Latenzzeit werden alle Angaben auf der Konsole ausgeben.
 
 	\paragraph{HTML Performance Tools} bieten ebenfalls ein breites Spektrum an Funktionalität. Mit einer Reihe von Tools und Unterstützung von perftest lassen sich automatisierte Benchmarks erstellen. Die gelieferten Daten dienen dem Vergleich der Systems vor und während des Angriffs. Alle Ergebnisse werden in einer JSON-Datei gesichert und ansprechend in einer HTML-Seite dargestellt
@@ -79,23 +78,82 @@
 	
 \clearpage
 \section*{Beschreibung des Benchmarking}
-
-	\usecase{Direkte Nachrichten 1:1}%
-		{Ein Producer erzeugt kontinuierlich Nachrichten, die von einem Consumer kontinuierlich korrekt entnommen werden.}%
-		{perfTest -h}%
-		{}
-
+	
 	Für die Beobachtung des Ressourcenverbrauches auf dem RabbitMQ-Server wurde das Kommandozeilenprogramm \tsl{glances} verwendet. Der Programmaufruf für jeden Test lautete wie folgt:
 	\begin{quote}
 		\ttfamily
 		\$\,> sudo glances -t 5 -\,-disable-process
 	\end{quote}
 	Er veranlasst, die Ansicht alle 5 Sekunden zu erneuern und die Anzeige der aktuell laufenden Prozesse abzuschalten, um den Ressourcenverbrauch durch \textsl{glances} selbst zu reduzieren.
+	Vor jeder Messung wurde die VM auf einen Snapshot zurückgesetzt, bei der sich das System in einem Zustand befindet, den es 5 minuten nach dem Hochfahren der VM besitzt.
+	
+	\usecase{Leerlauf}%
+		{Der RabbitMQ-Server befindet sich im Leerlauf, d.\,h. ohne irgendeine Form von Last.}%
+		{Keine}%
+		{Keine}%
+		{%
+		 \measure{CPU}{\textasciitilde 0.7\%}\\
+		 \measure{RAM}{11.1\% (110MB)}\\
+		 \measure{HDD}{5.01GB/5.78GB}\\
+		 \measure{NET}{IN \textasciitilde 3Kbit/s\quad OUT \textasciitilde 197Kbit/s}%
+		}%
+		{Keine}
+	
+	\usecase{Referenzszenario}%
+		{Ein Producer erzeugt kontinuierlich Nachrichten, die von einem Consumer kontinuierlich korrekt entnommen werden. Es finden keine weiteren Anfragen bzw. Zugriffe auf den RabbitMQ-Server statt.}%
+		{%
+		 Messdauer: 600s (10min)\\
+		 1 Consumer \\
+		 1 Producer \\
+		 Nachrichtengröße: 1024 Byte\\
+		 Max. 50 Nachrichten/s (Producer)
+		}%
+		{sh startBenchmark.sh testc:testp@192.168.178.153:5672/\%2f}%
+		{%
+		 \measure{CPU}{\textasciitilde 3.8\%}\\
+		 \measure{RAM}{11.4\% (113MB)}\\
+		 \measure{HDD}{5.01GB/5.78GB}\\
+		 \measure{NET}{IN \textasciitilde 476Kbit/s\quad OUT \textasciitilde 582Kbit/s}%
+		}%
+		{Die Sender/Empfangsrate sowie die Latenz sind wie erwartet weitgehend konstant (Siehe Abb. \ref{fig:idlestd}). Die Latenz liegt bei durchschnittliche 1.0 ms.}
+		\begin{figure}[!htb]
+			\centering
+			\includegraphics[width=\textwidth]{img/std.png}
+			\caption{Ohne Angriff - Verlauf der Sende-/Empfangsrate und der Latenz im Referenzszenario}
+			\label{fig:idlestd}
+		\end{figure}
+	
 	
 \clearpage
 \section*{Beschreibung der Angriffe}
 
-	Beschreibung Standard Anwendung 1 Producer 5 Consumer während Anwendungsszenario läuft. Beschreibung Ressourcenverbrauch.
+	\attack{Referenzangriff - Kooperativer Client}%
+		{Ein Producer erzeugt kontinuierlich Nachrichten die über einen \glqq fanout\grqq-Exchange an 5 Consumer verteilt werden. Die Consumer quittieren dem RabbitMQ-Server dabei den Erhalt der Nachricht.}%
+		{%
+		 -dm ACK (Aufrufparameter für Angriff) \\
+		 -c 5 (5 Consumer) \\
+		 -i 10 (10ms Pause zwischen 2 Consumer/Producer-Anfragen) \\
+		 -ms 10240 (Messagegröße: 10KB) \\
+		 -u <uri> (URI für Verbindung mit Server) \\
+		 1 Producer (Standard) \\
+		 Nicht-Persistente Nachrichten (Standard)
+		}%
+		{Amqpstress -dm ACK -c 5 -i 10 -ms 10240 -u amqp://testc:testp@192.168.178.153:5672/\%2f}%
+		{%
+		 \measure{CPU}{\textasciitilde 10.1\% - 13.0\%}\\
+		 \measure{RAM}{11.9\% - 12.0\% (118MB - 119MB)}\\
+		 \measure{HDD}{5.01GB/5.78GB}\\
+		 \measure{NET}{IN \textasciitilde 8.51Mbit/s\quad OUT \textasciitilde 66.67Mbit/s}%
+		}%
+		{Der Ressourcenverbrauch ist wie erwartet weitgehend konstant. Die Latenz liegt bei durchschnittliche 1.0 ms. In Bezug auf das Referenzszenario ist keine Beeinträchtigung erkennbar  (Siehe Abb. \ref{fig:ack}).}
+		
+		
+		\begin{figure}[!htb]
+			\centering
+			\includegraphics[width=\textwidth]{img/ack.png}
+			\caption{Kooperativer Client - Verlauf der Sende-/Empfangsrate und der Latenz im Referenzszenario}
+			\label{fig:ack}
+		\end{figure}
 
 \clearpage
 	\attack{Ignorieren von Nachrichten}%
@@ -105,18 +163,33 @@
 		 -dm NO (Aufrufparameter für Angriff) \\
 		 -c 5 (5 Consumer) \\
 		 -i 10 (10ms Pause zwischen 2 Consumer/Producer-Anfragen) \\
-		 -ms 102400 (Messagegröße: 10KB) \\
+		 -ms 10240 (Messagegröße: 10KB) \\
 		 -u <uri> (URI für Verbindung mit Server) \\
 		 1 Producer (Standard) \\
 		 Nicht-Persistente Nachrichten (Standard)
 		}%
-		{Amqpstress -dm NO -c 5 -i 10 -ms 102400 -u amqp://testc:testp@localhost:5672/\%2f}%
-		{Nachrichten werden bis zur Hälfte des eingestellten Limits (hier ~400MB) im RAM gehalten, bei überschreiten lagert der RabbitMQ-Server im Hintergrund die Nachrichten auf die Festplatte aus. Durch die Freigabe des RAM-Speichers entsteht ein Sägezahnmuster. Dieser Vorgang wiederholt sich bis die Festplatte voll ist und RabbitMQ alle Verbindungen schließt und in diesem Zustand verweilt.CPU-Last liegt konstant bei ca. 10\%.}%
-		{Verwendung von persistenten Nachrichten (-mp) steigert CPU-Last um x\%.}
+		{Amqpstress -dm NO -c 5 -i 10 -ms 10240 -u amqp://testc:testp@192.168.178.153:5672/\%2f}%
+		{%
+		 \measure{CPU}{\textasciitilde 11.1\% - 38.7\%}\\
+		 \measure{RAM}{12.0\% - 12.0\% (120MB - 386MB)}\\
+		 \measure{HDD}{5.01GB/5.78GB bis 5.42GB/5.78GB}\\
+		 \measure{NET}{IN \textasciitilde 8.33Mbit/s\quad OUT \textasciitilde 68.0Mbit/s}%
+		}%
+		{Nachrichten werden bis zur Hälfte des eingestellten Limits (hier ~200MB) im RAM gehalten, bei überschreiten lagert der RabbitMQ-Server im Hintergrund die Nachrichten auf die Festplatte aus. Durch die Freigabe des RAM-Speichers entsteht ein Sägezahnmuster. Dieser Vorgang wiederholt sich bis die Festplatte voll ist und RabbitMQ alle Verbindungen schließt und in diesem Zustand verweilt. Die CPU-Last und der Netzwerkdurchsatz fallen dabei auf Werte wie im Idle-Zustand}%
 		
 		\begin{figure}[!htb]
 			\centering
-			\includegraphics[width=0.9\textwidth]{img/noResp/history_RAM_HDD.png}
+			\includegraphics[width=\textwidth]{img/no.png}
+		\end{figure}
+		
+		\begin{figure}[!htb]
+			\centering
+			\includegraphics[width=\textwidth]{img/noResp/ram.png}
+		\end{figure}
+		
+		\begin{figure}[!htb]
+			\centering
+			\includegraphics[width=\textwidth]{img/noResp/disk.png}
 		\end{figure}
 	
 %------------------------------------------------------------------------------
@@ -128,14 +201,19 @@
 		 -dm REJECT (Aufrufparameter für Angriff) \\
 		 -c 5 (5 Consumer) \\
 		 -i 10 (10ms Pause zwischen 2 Consumer/Producer-Anfragen) \\
-		 -ms 102400 (Messagegröße: 10KB) \\
+		 -ms 10240 (Messagegröße: 10KB) \\
 		 -u <uri> (URI für Verbindung mit Server) \\
 		 1 Producer (Standard) \\
 		 Nicht-Persistente Nachrichten (Standard)
 		}%
 		{Amqpstress -dm REJECT -c 5 -i 10 -ms 102400 -mp -u amqp://testc:testp@localhost:5672/\%2f}%
-		{}%
-		{Verwendung von persistenten Nachrichten (-mp) steigert CPU-Last um x\%.}
+		{%
+		 \measure{CPU}{\textasciitilde 11.1\% - 38.7\%}\\
+		 \measure{RAM}{12.0\% - 12.0\% (120MB - 386MB)}\\
+		 \measure{HDD}{5.01GB/5.78GB bis 5.42GB/5.78GB}\\
+		 \measure{NET}{IN \textasciitilde 8.33Mbit/s\quad OUT \textasciitilde 68.0Mbit/s}%
+		}%
+		{}
 	
 %------------------------------------------------------------------------------
 \clearpage	
