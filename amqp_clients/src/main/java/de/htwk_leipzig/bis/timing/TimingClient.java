@@ -3,6 +3,8 @@ package de.htwk_leipzig.bis.timing;
 import java.net.URI;
 import java.nio.ByteBuffer;
 
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.QueueingConsumer;
 
 import de.htwk_leipzig.bis.util.AMQPSubscriber;
@@ -26,21 +28,21 @@ public class TimingClient extends AMQPSubscriber {
 	}
 
 	@Override
-	protected void doSubscriberActions() throws Exception {
-		// adjustOffset();
+	protected void doSubscriberActions(Connection connection, Channel channel) throws Exception {
+		// adjustOffset(channel);
 
-		mChannel.queueDeclare(QUEUE_NAME_REQUEST, false, false, true, null);
-		mChannel.queueDeclare(QUEUE_NAME_RESPONSE, false, false, true, null);
-		mChannel.queueDeclare(QUEUE_NAME_SYNC, false, false, true, null);
+		channel.queueDeclare(QUEUE_NAME_REQUEST, false, false, true, null);
+		channel.queueDeclare(QUEUE_NAME_RESPONSE, false, false, true, null);
+		channel.queueDeclare(QUEUE_NAME_SYNC, false, false, true, null);
 
-		final QueueingConsumer consumer = new QueueingConsumer(mChannel);
+		final QueueingConsumer consumer = new QueueingConsumer(channel);
 
-		mChannel.basicConsume(QUEUE_NAME_RESPONSE, true, consumer);
+		channel.basicConsume(QUEUE_NAME_RESPONSE, true, consumer);
 
 		System.out.println(" [*] Send echo. Press CTRL+C to exit");
 		while (true) {
 			final long now = System.currentTimeMillis();
-			mChannel.basicPublish("", QUEUE_NAME_REQUEST, null, ByteBuffer.allocate(Long.BYTES).putLong(now).array());
+			channel.basicPublish("", QUEUE_NAME_REQUEST, null, ByteBuffer.allocate(Long.BYTES).putLong(now).array());
 			consumer.nextDelivery();
 			final long after = System.currentTimeMillis();
 
@@ -51,10 +53,10 @@ public class TimingClient extends AMQPSubscriber {
 	}
 
 	@SuppressWarnings("unused")
-	private void adjustOffset() throws Exception {
+	private void adjustOffset(Channel channel) throws Exception {
 		System.out.println("Use ping delay: " + mPingDelay + "ms");
 		final long timeOffset = ToolBox.calculateNTPOffset();
 		System.out.println("NTP offset: " + timeOffset);
-		mChannel.basicPublish("", QUEUE_NAME_SYNC, null, ByteBuffer.allocate(Long.BYTES).putLong(timeOffset).array());
+		channel.basicPublish("", QUEUE_NAME_SYNC, null, ByteBuffer.allocate(Long.BYTES).putLong(timeOffset).array());
 	}
 }

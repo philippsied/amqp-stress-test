@@ -7,6 +7,8 @@ import java.net.URI;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.QueueingConsumer;
 
 import de.htwk_leipzig.bis.util.AMQPSubscriber;
@@ -80,19 +82,19 @@ public class MessageConsumer extends AMQPSubscriber {
 	 * @see de.htwk_leipzig.bis.util.AMQPSubscriber#doSubscriberActions()
 	 */
 	@Override
-	protected void doSubscriberActions() throws Exception {
+	protected void doSubscriberActions(Connection connection, Channel channel) throws Exception {
 		String queueName = RandomStringUtils.randomAlphabetic(15);
-		mChannel.exchangeDeclare(EXCHANGE_NAME, "fanout", mUsePersistentQueue, false, null);
-		mChannel.queueDeclare(queueName, mUsePersistentQueue, false, true, null);
-		mChannel.queueBind(queueName, EXCHANGE_NAME, "");
-		mChannel.basicQos(DEFAULT_PREFETCH_AMOUNT, DEFAULT_PREFETCH_COUNT, false);
-		final QueueingConsumer consumer = new QueueingConsumer(mChannel);
-		mChannel.basicConsume(queueName, false, consumer);
+		channel.exchangeDeclare(EXCHANGE_NAME, "fanout", mUsePersistentQueue, false, null);
+		channel.queueDeclare(queueName, mUsePersistentQueue, false, true, null);
+		channel.queueBind(queueName, EXCHANGE_NAME, "");
+		channel.basicQos(DEFAULT_PREFETCH_AMOUNT, DEFAULT_PREFETCH_COUNT, false);
+		final QueueingConsumer consumer = new QueueingConsumer(channel);
+		channel.basicConsume(queueName, false, consumer);
 
 		System.out.println("Consumer Online");
 		while (true) {
 			QueueingConsumer.Delivery delivery = consumer.nextDelivery();
-			mResponse.response(mChannel, delivery);
+			mResponse.response(channel, delivery);
 			Thread.sleep(mConsumeInterval);
 		}
 	}

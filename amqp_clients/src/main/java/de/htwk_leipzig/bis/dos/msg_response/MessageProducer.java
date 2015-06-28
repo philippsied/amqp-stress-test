@@ -8,6 +8,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import java.net.URI;
 import java.util.Random;
 
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.MessageProperties;
 
 import de.htwk_leipzig.bis.util.AMQPSubscriber;
@@ -72,8 +74,8 @@ public class MessageProducer extends AMQPSubscriber {
 	 * @see de.htwk_leipzig.bis.util.AMQPSubscriber#doSubscriberActions()
 	 */
 	@Override
-	protected void doSubscriberActions() throws Exception {
-		mChannel.exchangeDeclare(EXCHANGE_NAME, "fanout", mUsePersistentMessage, false, null);
+	protected void doSubscriberActions(Connection connection, Channel channel) throws Exception {
+		channel.exchangeDeclare(EXCHANGE_NAME, "fanout", mUsePersistentMessage, false, null);
 
 		System.out.println("Producer Online");
 		while (true) {
@@ -86,9 +88,9 @@ public class MessageProducer extends AMQPSubscriber {
 				message = null;
 			}
 			if (mUsePersistentMessage) {
-				mChannel.basicPublish(EXCHANGE_NAME, "", MessageProperties.PERSISTENT_BASIC, message);
+				channel.basicPublish(EXCHANGE_NAME, "", MessageProperties.PERSISTENT_BASIC, message);
 			} else {
-				mChannel.basicPublish(EXCHANGE_NAME, "", null, message);
+				channel.basicPublish(EXCHANGE_NAME, "", null, message);
 			}
 			Thread.sleep(mProduceInterval);
 		}

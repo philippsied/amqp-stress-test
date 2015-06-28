@@ -19,11 +19,6 @@ import com.rabbitmq.client.ConnectionFactory;
 public abstract class AMQPSubscriber implements Runnable {
 
 	/**
-	 * Member variable to hold the used channel.
-	 */
-	protected Channel mChannel;
-
-	/**
 	 * Member variable to hold the RabbitMQ-Server URI.
 	 */
 	protected final URI mUri;
@@ -50,12 +45,12 @@ public abstract class AMQPSubscriber implements Runnable {
 			final ConnectionFactory factory = ToolBox.createConnectionFactory(mUri);
 			final Connection connection = factory.newConnection();
 			try {
-				mChannel = connection.createChannel();
+				Channel channel = connection.createChannel();
 				try {
-					doSubscriberActions();
+					doSubscriberActions(connection, channel);
 				} finally {
-					if (mChannel != null) {
-						mChannel.close();
+					if (channel != null) {
+						channel.close();
 					}
 				}
 			} finally {
@@ -72,9 +67,11 @@ public abstract class AMQPSubscriber implements Runnable {
 	 * Concrete subscriber must overide this method to do their specific
 	 * actions.
 	 * 
+	 * @param channel
+	 *            the channel to use
 	 * @throws Exception
 	 *             which may occur during the action.
 	 */
-	protected abstract void doSubscriberActions() throws Exception;
+	protected abstract void doSubscriberActions(Connection connection, Channel channel) throws Exception;
 
 }
