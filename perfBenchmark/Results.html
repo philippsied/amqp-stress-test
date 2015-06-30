@@ -2,31 +2,75 @@
 <html>
  <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>RabbitMQ Performance</title>
+    <title>RabbitMQ Stresstest</title>
     <link href="results/perf.css" rel="stylesheet" type="text/css">
     <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="results/lib/excanvas.min.js"></script><![endif]-->
     <script language="javascript" type="text/javascript" src="results/lib/jquery.min.js"></script>
     <script language="javascript" type="text/javascript" src="results/lib/jquery.flot.min.js"></script>
     <script language="javascript" type="text/javascript" src="results/perf.js"></script>
     <script language="javascript" type="text/javascript">
-    $(document).ready(function() {
+    
+   $(document).ready(function() {
       var main_results;
-         $.getJSON( "environment/publish-consume-result.json", function( json ) {
+         $.getJSON( "measure.json", function( json ) {
             render_graphs(json);
         });
     });
+
     </script>
  </head>
     <body>
-    <h1>RabbitMQ Performance</h1>
+    <h1>Auswertung #TESTCASEHEAD</h1>
 
-    <h3>1p-1c_Simple</h3>
+    <h3>Ressourcenbedarf RabbitMQ Server</h3>
     <div class="chart"
       data-type="time"
-      data-latency="true"
-      data-x-axis="time (s)"
-      data-y-axis="rate (msg/s)"
-      data-y-axis2="latency (μs)"
-      data-scenario="1p-1c_Simple"></div>
+      data-legend="nw"
+      data-y1="memused-MB"
+      data-y2="hddfree-MB"
+      data-y3="cpu-load"
+      data-y1-label="Verwendeter Speicher (RAM)"
+      data-y2-label="Freier Speicher (HDD)"
+      data-y3-label="CPU-Auslastung"
+      data-x-axis="Zeit (s)"
+      data-y-axis="Speichergröße (MB)"
+      data-y-axis2="CPU-Auslastung (%)"
+      data-show-y3="true"
+      data-scenario="server">
+    </div>
+    <p>
+    <div class="chart"
+      data-type="time"
+      data-legend="nw"
+      data-y1="net-rate-rx-Kbps"
+      data-y2="net-rate-tx-Kbps"
+      data-y3="cpu-load"
+      data-y1-label="Empfangsrate"
+      data-y2-label="Transferrate"
+      data-y3-label="CPU-Auslastung"
+      data-x-axis="Zeit (s)"
+      data-y-axis="Datenübertragungsrate (kbit/s)"
+      data-y-axis2="CPU-Auslastung (%)"
+      data-show-y3="true"
+      data-y3-maxVal="100"
+      data-scenario="server">
+    </div>
+    <p>
+    <h3>Beeinflussung Szenario</h3>
+    <div class="chart"
+      data-type="time"
+      data-legend="nw"
+      data-y1="send-msg-rate"
+      data-y2="recv-msg-rate"
+      data-y3="avg-latency"
+      data-y1-label="Empfangsrate"
+      data-y2-label="Transferrate"
+      data-y3-label="Latenz"
+      data-x-axis="Zeit (s)"
+      data-y-axis="Nachrichtenübertragungsrate (Nachrichten/s)"
+      data-y-axis2="Latenz (us)"
+      data-show-y3="true"
+      data-scenario="1p-1c_Simple">
+    </div>
   </body>
  </html>

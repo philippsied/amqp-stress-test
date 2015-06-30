@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+<listEntry value="/amqp_clients/src/main/java/de/htwk_leipzig/bis/main/Amqpstress.java"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+<listEntry value="1"/>
+</listAttribute>
+<stringAttribute key="org.eclipse.jdt.launching.CLASSPATH_PROVIDER" value="org.eclipse.m2e.launchconfig.classpathProvider"/>
+<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="de.htwk_leipzig.bis.main.Amqpstress"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="-dm reject -c 5 -i 10 -ms 10240 -u amqp://testc:testp@192.168.178.153:5672/%2f"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="amqp_clients"/>
+<stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.eclipse.m2e.launchconfig.sourcepathProvider"/>
+<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Xms2560m -XX:+UseConcMarkSweepGC"/>
+</launchConfiguration>

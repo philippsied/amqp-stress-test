@@ -228,12 +228,18 @@ function attr_or_default(div, key, def) {
     return res == undefined ? def : res;
 }
 
-var axes_rate_and_cpu_load = [{ min:0, position:"left" },
-                              { min:0, position:"right" }];
+var axes_rate_and_cpu_load = [{min:       0,
+                              position:  "right"
+                              },
+                              {min:       0,
+                              max: 100,
+                              position:  "left"}];
 
-var axes_rate_and_bytes = [{ min:0},
-                           { min:0, position:"right" }];
+var axes_rate_and_bytes = [{min:       0},
+                           {min:       0,
+                            position:  "right"}];
 
-var log_x_axis = {min:1,
+var log_x_axis = {min:       1,
+                  max:600,
                   transform: log_transform,
                   ticks:     log_ticks};
