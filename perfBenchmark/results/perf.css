@@ -5,6 +5,7 @@ p, ul { font: 18px Verdana,sans-serif; }
 .chart {
     width: 800px;
     height: 400px;
+    margin: 0 auto;
 }
 
 .small-chart {
@@ -18,8 +19,8 @@ p, ul { font: 18px Verdana,sans-serif; }
 
 .xaxis, .yaxis {
     text-align: center;
+    width: 230px;
     xcolor: #545454;
-    font-size: smaller;
 }
 
 /* Any similarity is entirely intentional */
