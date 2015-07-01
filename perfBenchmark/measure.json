@@ -1,5 +1,5 @@
 {
-  "name":"ack",
+  "name":"DoS with Messages, Consumer response:ACK",
   "server":{
     "samples":[
      {
@@ -788,7 +788,7 @@
      }],
     "avg-cpu-load":12.3,
     "avg-net-rate-rx-Kbps":5108.5,
-    "avg-net-rate-rx-Kbps":42581.5
+    "avg-net-rate-tx-Kbps":42581.5
    },
   "1p-1c_Simple":{
     "send-bytes-rate":51227.56386067128,
@@ -800,9 +800,9 @@
       "elapsed":1000,
       "send-bytes-rate":21504.0,
       "recv-msg-rate":20.0,
-      "max-latency":48358,
+      "max-latency":68358,
       "min-latency":2021,
-      "avg-latency":5356,
+      "avg-latency":2656,
       "send-msg-rate":21.0,
       "recv-bytes-rate":20480.0
     },{
