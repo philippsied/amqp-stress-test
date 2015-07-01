@@ -17,16 +17,16 @@ numericbkp=$LC_NUMERIC
 export LC_NUMERIC="en_US.UTF-8"
 
 
-## Skip first line with column names and second line with measured value (falsified by start)  and extract the cpu, used RAM, net io(rx), net io(tx) and the free hdd
+# Skip first line with column names and second line with measured value (falsified by start)  and extract the cpu, used RAM, net io(rx), net io(tx) and the free hdd space
 tail -n +3 "$fileToConvert" | awk -F "," '{print $110 "," $90 "," $27 "," $24 "," $83 "," NF }' > "$tmp"
 
 
-## Start creating target json
+# Start creating target json
 
 printf '{\n  "name":"%s",\n  "server":{\n    "samples":[' "$name" > "$target"
 entryprefix=""
 
-## iterate over lines of csv
+# Iterate over lines of csv
 	# Save old separator and set new separator
 	OLDIFS=$IFS
 	IFS=","
@@ -36,25 +36,23 @@ entryprefix=""
 	sumnetrx=0
 	sumnettx=0
 
-	# extract for each line
+	# Extract for each line
 	while read cpu memused netrx nettx hddfree count
 	 do
 	  if [ "$count" -ne 112 ]; then
 	   let time+=5000
 	   continue
 	  fi
-	  # check for empty values -> treated as zero
-
 	  
-	  # mem, hdd value is given in bytes -> change to MB
+	  # RAM, HDD value is given in bytes -> change to MB
 	  let memused/=1048576
 	  let hddfree/=1048576
 	  
-	  # net is given in bits/sec -> change to kbit/s
+	  # Net value is given in bits/sec -> change to kbit/s
 	  let netrx/=1024
 	  let nettx/=1024
 	  
-	  # print out entry
+	  # Print out entry
 	  printf "$entryprefix\n     {\n" >> "$target"
 	  printf '      "elapsed":%u,\n' "$time" >> "$target"
 	  printf '      "cpu-load":%03.1f,\n' "$cpu" >> "$target"
@@ -64,32 +62,37 @@ entryprefix=""
 	  printf '      "hddfree-MB":%u\n' $hddfree >> "$target"
 	  printf '     }' >> "$target"
 	  
-	  # adjust counter, sum up for avg calculation
+	  # Adjust counter, sum up for avg calculation
 	  let time+=5000
 	  sumcpu=`bc <<< "scale=1; $sumcpu + $cpu"`
 	  let sumnetrx+=$netrx
 	  let sumnettx+=$nettx
 	  let i++
 	  entryprefix=","
-	 done < "$tmp"
+	done < "$tmp"
+	
+	# Restore old separator
 	IFS=$OLDIFS
 
-## add average values
+# Calc and append average values to json
 printf '],\n' >> "$target"
 printf '    "avg-cpu-load":%02.1f,\n' `bc <<< "scale=1; $sumcpu/$i"` >> "$target"
 printf '    "avg-net-rate-rx-Kbps":%02.1f,\n' `bc <<< "scale=1; $sumnetrx/$i"` >> "$target"
-printf '    "avg-net-rate-rx-Kbps":%02.1f\n' `bc <<< "scale=1; $sumnettx/$i"` >> "$target"
+printf '    "avg-net-rate-tx-Kbps":%02.1f\n' `bc <<< "scale=1; $sumnettx/$i"` >> "$target"
 echo -e '   },' >> "$target"
 
+# Sppend measured values of std case
 cat $scenario | tail -n +2 | head -n -1 >> "$target"
 
 echo -e '}' >> "$target"
 
-# restore float digit
+# Restore float digit
 export LC_NUMERIC=$numericbkp
 
-
+# Remove tempfile
 rm "$tmp"
+
+echo "Results are stored in $target"
 
 
 
