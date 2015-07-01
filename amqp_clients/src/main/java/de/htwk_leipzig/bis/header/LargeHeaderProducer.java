@@ -8,6 +8,8 @@ import java.util.UUID;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.MessageProperties;
 
 import de.htwk_leipzig.bis.util.AMQPSubscriber;
@@ -83,9 +85,9 @@ public class LargeHeaderProducer extends AMQPSubscriber {
 	 * @see de.htwk_leipzig.bis.util.AMQPSubscriber#doSubscriberActions()
 	 */
 	@Override
-	protected void doSubscriberActions() throws Exception {
-
-		mChannel.queueDeclare(QUEUE_NAME, false, false, false, null);
+	protected void doSubscriberActions(Connection connection, Channel channel)
+			throws Exception {
+		channel.queueDeclare(QUEUE_NAME, false, false, false, null);
 
 		byte[] message;
 
@@ -97,7 +99,7 @@ public class LargeHeaderProducer extends AMQPSubscriber {
 		}
 
 		while (true) {
-			mChannel.basicPublish("", QUEUE_NAME, mProb, message);
+			channel.basicPublish("", QUEUE_NAME, mProb, message);
 		}
 	}
 

@@ -2,13 +2,13 @@ package de.htwk_leipzig.bis.transaction;
 
 import java.net.URI;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
 
 import de.htwk_leipzig.bis.util.AMQPSubscriber;
 
-public class TxProducer {
+public class TxProducer extends AMQPSubscriber {
 
 	/**
 	 * The queue-name for this test.
@@ -31,114 +31,65 @@ public class TxProducer {
 	private final boolean mCommit;
 
 	/**
-	 * Holds the uri of the RabbitMQ-Server.
+	 * Holds the special thread-id
 	 */
-	private final URI mURI;
+	private int mID;
 
 	/**
 	 * Creates a new instance of {@code TxProducer} with the given uri, message
-	 * size, commit-state and producer count.
+	 * size and commit-state.
 	 * 
 	 * @param uri
+	 *            the uri-string for the server-connection
 	 * @param messageSizeInBytes
+	 *            the size for each messages
 	 * @param messageCount
+	 *            the number of messages for each thread
 	 * @param commit
-	 * @param producerCount
+	 *            the commit-state for commit all messages or not
 	 */
-	public TxProducer(final URI uri, final int messageSizeInBytes,
-			final int messageCount, final boolean commit,
-			final int producerCount) {
-
+	public TxProducer(URI uri, final int messageSizeInBytes,
+			final int messageCount, final boolean commit) {
+		super(uri);
+		this.mID = 1;
 		this.mMessageSizeInBytes = messageSizeInBytes;
 		this.mCommit = commit;
 		this.mMessageCount = messageCount;
-		this.mURI = uri;
-
-		System.out.print("Producer: " + producerCount);
-		System.out.print(" | Messagesize: " + mMessageSizeInBytes);
-		System.out.print(" | Messages per producer: " + mMessageCount);
-		System.out.print(" | Commit: " + mCommit + "\n\n");
-
-		setup(producerCount);
 	}
 
-	/**
-	 * Creates the given number of producer. Its used a thread-pool to send
-	 * messages over each producer.
+	/*
+	 * (non-Javadoc)
 	 * 
-	 * @param producerCount
+	 * @see de.htwk_leipzig.bis.util.AMQPSubscriber#doSubscriberActions()
 	 */
-	private void setup(final int producerCount) {
+	@Override
+	protected void doSubscriberActions(Connection connection, Channel channel)
+			throws Exception {
 
-		final ExecutorService es = Executors.newCachedThreadPool();
+		// mChannel.queueDeclare(QUEUE_NAME, false, false, false, null);
 
-		for (int i = 0; i < producerCount; i++) {
-			es.execute(new TxPublisher(i));
+		byte[] message;
+		final int threadID = mID++;
+
+		if (mMessageSizeInBytes > 0) {
+			message = new byte[mMessageSizeInBytes];
+			new Random().nextBytes(message);
+		} else {
+			message = null;
 		}
 
-		try {
-			es.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-		} catch (InterruptedException e) {
-			System.out.println("Timeout reached");
+		channel.txSelect();
+
+		for (int i = 0; i < mMessageCount; ++i) {
+			channel.basicPublish("", QUEUE_NAME, null, message);
+
+			System.out.println("Producer [" + threadID + "] | Message [" + i
+					+ "]");
 		}
 
+		if (mCommit) {
+			channel.txCommit();
+		}
 	}
 
-	/**
-	 * The thread for sending messages over the transaction-mode.
-	 *
-	 */
-	public class TxPublisher extends AMQPSubscriber implements Runnable {
-
-		/**
-		 * Holds the thread-id.
-		 */
-		private final int threadID;
-
-		/**
-		 * Creates a new instance of {@code TxPublisher} with a special
-		 * thread-id.
-		 * 
-		 * @param threadid
-		 *            the given thread-id.
-		 */
-		public TxPublisher(int threadid) {
-			super(mURI);
-			this.threadID = threadid;
-		}
-
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see de.htwk_leipzig.bis.util.AMQPSubscriber#doSubscriberActions()
-		 */
-		@Override
-		protected void doSubscriberActions() throws Exception {
-
-			// mChannel.queueDeclare(QUEUE_NAME, false, false, false, null);
-
-			byte[] message;
-
-			if (mMessageSizeInBytes > 0) {
-				message = new byte[mMessageSizeInBytes];
-				new Random().nextBytes(message);
-			} else {
-				message = null;
-			}
-
-			mChannel.txSelect();
-
-			for (int i = 0; i < mMessageCount; ++i) {
-				mChannel.basicPublish("", QUEUE_NAME, null, message);
-
-				System.out.println("Producer [" + threadID + "] | Message ["
-						+ i + "]");
-			}
-
-			if (mCommit) {
-				mChannel.txCommit();
-			}
-
-		}
-	}
 }
