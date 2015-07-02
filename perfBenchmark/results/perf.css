@@ -17,10 +17,17 @@ p, ul { font: 18px Verdana,sans-serif; }
     float: left;
 }
 
-.xaxis, .yaxis {
+.xaxis {
     text-align: center;
-    width: 230px;
+    width: 200px;
     xcolor: #545454;
+}
+
+.yaxis {
+    text-align: center;
+    width: 130px;
+    xcolor: #545454;
+    transform: rotate(270deg);
 }
 
 /* Any similarity is entirely intentional */
