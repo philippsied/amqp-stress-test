@@ -18,7 +18,7 @@
 			\textsl{Anmerkungen} & \parbox[t]{10.5cm}{#6}
 		\end{tabular}}
 \newcounter{attack}
-\newcommand{\attack}[6]{\stepcounter{attack}%
+\newcommand{\attack}[4]{\stepcounter{attack}%
 		\begin{tabular}{cl}
 			\hline
 			{\Large \bfseries A\theattack} & {\bfseries #1} \\
@@ -26,8 +26,16 @@
 			\textsl{Beschreibung} &  \parbox[t]{10.5cm}{#2} \\
 			\textsl{Testparameter} & \parbox[t]{10.5cm}{#3} \\
 			\textsl{Befehlszeile} & \parbox[t]{10.5cm}{\footnotesize\texttt{#4}} \\
-			\textsl{Ressourcenbedarf} & \parbox[t]{10.5cm}{#5} \\
-			\textsl{Beobachtungen} & \parbox[t]{10.5cm}{#6} 
+		\end{tabular} \medskip\\}
+		
+\newcommand{\report}[4]{
+		\begin{tabular}{cp{10.5cm}}
+			\hline
+			{Angriff} & {\bfseries #1} \\
+			\hline
+			\textsl{Messwerte} &  #2 \\
+			\textsl{Beobachtungen} &  #3 \\
+			\textsl{Anmerkungen} &  #4 \\
 		\end{tabular} \medskip\\}
 		
 \newcommand{\measure}[2]{\textsc{#1:} #2}
