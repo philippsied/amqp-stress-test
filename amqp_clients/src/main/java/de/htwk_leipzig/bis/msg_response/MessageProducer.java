@@ -1,12 +1,13 @@
 /**
  * 
  */
-package de.htwk_leipzig.bis.dos.msg_response;
+package de.htwk_leipzig.bis.msg_response;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.net.URI;
-import java.util.Random;
+
+import org.apache.commons.lang3.RandomUtils;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -59,7 +60,8 @@ public class MessageProducer extends AMQPSubscriber {
 	 *            The size of the message to be sent. The value "0" means no
 	 *            message payload.
 	 */
-	public MessageProducer(final URI uri, final int produceIntervalInSec, final boolean usePersistentMessage, final int messageSizeInBytes) {
+	public MessageProducer(final URI uri, final int produceIntervalInSec, final boolean usePersistentMessage,
+			final int messageSizeInBytes) {
 		super(uri);
 		checkArgument(0 <= produceIntervalInSec, "Interval must be greater or equal 0");
 		checkArgument(0 <= messageSizeInBytes, "Message size must be greater or equal 0");
@@ -78,14 +80,17 @@ public class MessageProducer extends AMQPSubscriber {
 		channel.exchangeDeclare(EXCHANGE_NAME, "fanout", mUsePersistentMessage, false, null);
 
 		System.out.println("Producer Online");
-		while (true) {
-			byte[] message;
+		
+		byte[] message = null;
+		if (mMessageSizeInBytes > 0) {
+			message = new byte[mMessageSizeInBytes];
+		}
 
+		while (true) {
 			if (mMessageSizeInBytes > 0) {
-				message = new byte[mMessageSizeInBytes];
-				new Random().nextBytes(message);
-			} else {
-				message = null;
+				for (int i = 0; i < message.length; i++) {
+					message[i] = RandomUtils.nextBytes(1)[0];
+				}
 			}
 			if (mUsePersistentMessage) {
 				channel.basicPublish(EXCHANGE_NAME, "", MessageProperties.PERSISTENT_BASIC, message);

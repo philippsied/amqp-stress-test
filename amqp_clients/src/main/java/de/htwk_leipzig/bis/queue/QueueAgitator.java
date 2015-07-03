@@ -1,4 +1,4 @@
-package de.htwk_leipzig.bis.dos.queue;
+package de.htwk_leipzig.bis.queue;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -12,7 +12,7 @@ import com.rabbitmq.client.ConnectionFactory;
 
 import de.htwk_leipzig.bis.util.ToolBox;
 
-public class QueueSwapper implements Runnable {
+public class QueueAgitator implements Runnable {
 	private static final String EXCHANGE_NAME = "queueswapping";
 	private final URI mUri;
 	private final int mSwappingInterval;
@@ -20,7 +20,7 @@ public class QueueSwapper implements Runnable {
 	private final int mPendingQueueCount;
 	private final QueueAction mAction;
 
-	public QueueSwapper(final URI uri, final int swappingIntervalInMiliSec, final boolean usePersistentQueue, final int pendingQueueCount,
+	public QueueAgitator(final URI uri, final int swappingIntervalInMiliSec, final boolean usePersistentQueue, final int pendingQueueCount,
 			final QueueAction action) {
 		checkArgument(0 <= swappingIntervalInMiliSec, "Swapping interval must be greater or equal 0");
 		checkArgument(0 <= pendingQueueCount, "pendingQueueCount must be greater or equal 0");
@@ -74,7 +74,7 @@ public class QueueSwapper implements Runnable {
 
 	private String setupQueue(Channel channel, String exchangeName, String routingKey) throws Exception {
 		String queueName = RandomStringUtils.randomAlphabetic(15);
-		channel.queueDeclare(queueName, true, false, false, null);
+		channel.queueDeclare(queueName, mUsePersistentQueue, false, false, null);
 		channel.queueBind(queueName, exchangeName, routingKey);
 		return queueName;
 	}

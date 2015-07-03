@@ -1,4 +1,4 @@
-package de.htwk_leipzig.bis.dos.queue;
+package de.htwk_leipzig.bis.queue;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -45,6 +45,12 @@ public class QueueActionAddMsg implements QueueAction {
 			new Random().nextBytes(message);
 		}
 		return message;
+	}
+
+	@Override
+	public String toString() {
+		return "QueueActionAddMsg [mMessageSizeInBytes=" + mMessageSizeInBytes + ", mUsePersistentQueue="
+				+ mUsePersistentQueue + "]";
 	}
 
 }

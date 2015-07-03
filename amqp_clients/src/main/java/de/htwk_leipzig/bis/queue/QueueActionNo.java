@@ -1,7 +1,7 @@
 /**
  * 
  */
-package de.htwk_leipzig.bis.dos.queue;
+package de.htwk_leipzig.bis.queue;
 
 import java.io.IOException;
 

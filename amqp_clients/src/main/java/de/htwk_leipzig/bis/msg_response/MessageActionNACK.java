@@ -1,4 +1,4 @@
-package de.htwk_leipzig.bis.dos.msg_response;
+package de.htwk_leipzig.bis.msg_response;
 
 import static com.google.common.base.Preconditions.checkArgument;
 

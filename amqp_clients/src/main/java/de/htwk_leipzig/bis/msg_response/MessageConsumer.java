@@ -1,4 +1,4 @@
-package de.htwk_leipzig.bis.dos.msg_response;
+package de.htwk_leipzig.bis.msg_response;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -29,19 +29,21 @@ public class MessageConsumer extends AMQPSubscriber {
 	public static final String EXCHANGE_NAME = "messaging";
 
 	/**
-	 * Count of prefetched messages. 0 means infinity.
-	 */
-	public static final int DEFAULT_PREFETCH_COUNT = 0;
-
-	/**
-	 * Amount of prefetched messages in octets. 0 means infinity octets.
-	 */
-	public static final int DEFAULT_PREFETCH_AMOUNT = 0;
-
-	/**
 	 * Member variable to hold the interval between two Consume&Response events.
 	 */
 	private final int mConsumeInterval;
+
+	/**
+	 * Member variable to hold the max. count of prefetched messages or 0 for
+	 * infinity.
+	 */
+	private final int mPrefetchCount;
+
+	/**
+	 * Member variable to hold the max. amount of prefetched messages in octets
+	 * (bytes) or 0 for infinity.
+	 */
+	private final int mPrefetchAmount;
 
 	/**
 	 * Member variable to indicate whether the communication is persistent or
@@ -63,15 +65,23 @@ public class MessageConsumer extends AMQPSubscriber {
 	 *            the uri of the RabbitMQ-Server.
 	 * @param consumeIntervalInMiliSec
 	 *            interval between two Consume&Response events.
+	 * @param prefetchCount
+	 *            max. count of prefetched messages or 0 for infinity
+	 * @param prefetchAmount
+	 *            max. amount of prefetched messages in octets (bytes) or 0 for
+	 *            infinity.
 	 * @param usePersistentQueue
 	 *            Flag to indicate that the communication is persistent.
 	 * @param responseAction
 	 *            response action to use for every consumed message.
 	 */
-	public MessageConsumer(final URI uri, final int consumeIntervalInMiliSec, final boolean usePersistentQueue, final ResponseAction responseAction) {
+	public MessageConsumer(final URI uri, final int consumeIntervalInMiliSec, final int prefetchCount,
+			final int prefetchAmount, final boolean usePersistentQueue, final ResponseAction responseAction) {
 		super(uri);
 		checkArgument(0 <= consumeIntervalInMiliSec, "Interval must be greater or equal 0");
 		mConsumeInterval = consumeIntervalInMiliSec;
+		mPrefetchCount = prefetchCount;
+		mPrefetchAmount = prefetchAmount;
 		mUsePersistentQueue = usePersistentQueue;
 		mResponse = checkNotNull(responseAction);
 	}
@@ -87,7 +97,7 @@ public class MessageConsumer extends AMQPSubscriber {
 		channel.exchangeDeclare(EXCHANGE_NAME, "fanout", mUsePersistentQueue, false, null);
 		channel.queueDeclare(queueName, mUsePersistentQueue, false, true, null);
 		channel.queueBind(queueName, EXCHANGE_NAME, "");
-		channel.basicQos(DEFAULT_PREFETCH_AMOUNT, DEFAULT_PREFETCH_COUNT, false);
+		channel.basicQos(mPrefetchAmount, mPrefetchCount, false);
 		final QueueingConsumer consumer = new QueueingConsumer(channel);
 		channel.basicConsume(queueName, false, consumer);
 
@@ -95,6 +105,7 @@ public class MessageConsumer extends AMQPSubscriber {
 		while (true) {
 			QueueingConsumer.Delivery delivery = consumer.nextDelivery();
 			mResponse.response(channel, delivery);
+			delivery = null;
 			Thread.sleep(mConsumeInterval);
 		}
 	}
