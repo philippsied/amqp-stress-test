@@ -23,22 +23,22 @@ import com.rabbitmq.client.ConnectionFactory;
 
 import de.htwk_leipzig.bis.channel.ChannelConsumer;
 import de.htwk_leipzig.bis.channel.ChannelProducer;
-import de.htwk_leipzig.bis.connections.dropconnection.ConnectionHanging;
-import de.htwk_leipzig.bis.connections.heartbeat.HeartbeatStressor;
-import de.htwk_leipzig.bis.connections.slowConnection.HandshakeActionSleep;
-import de.htwk_leipzig.bis.connections.slowConnection.CustomConnection;
-import de.htwk_leipzig.bis.dos.msg_response.MessageActionACK;
-import de.htwk_leipzig.bis.dos.msg_response.MessageActionNACK;
-import de.htwk_leipzig.bis.dos.msg_response.MessageActionNoResponse;
-import de.htwk_leipzig.bis.dos.msg_response.MessageActionReject;
-import de.htwk_leipzig.bis.dos.msg_response.MessageConsumer;
-import de.htwk_leipzig.bis.dos.msg_response.MessageProducer;
-import de.htwk_leipzig.bis.dos.msg_response.ResponseAction;
-import de.htwk_leipzig.bis.dos.queue.QueueAction;
-import de.htwk_leipzig.bis.dos.queue.QueueActionAddMsg;
-import de.htwk_leipzig.bis.dos.queue.QueueActionNo;
-import de.htwk_leipzig.bis.dos.queue.QueueSwapper;
+import de.htwk_leipzig.bis.connection.dropconnection.ConnectionDropping;
+import de.htwk_leipzig.bis.connection.handshake.CustomConnection;
+import de.htwk_leipzig.bis.connection.handshake.HandshakeActionSleep;
+import de.htwk_leipzig.bis.connection.heartbeat.HeartbeatStressor;
 import de.htwk_leipzig.bis.header.LargeHeaderProducer;
+import de.htwk_leipzig.bis.msg_response.MessageActionACK;
+import de.htwk_leipzig.bis.msg_response.MessageActionNACK;
+import de.htwk_leipzig.bis.msg_response.MessageActionNoResponse;
+import de.htwk_leipzig.bis.msg_response.MessageActionReject;
+import de.htwk_leipzig.bis.msg_response.MessageConsumer;
+import de.htwk_leipzig.bis.msg_response.MessageProducer;
+import de.htwk_leipzig.bis.msg_response.ResponseAction;
+import de.htwk_leipzig.bis.queue.QueueAction;
+import de.htwk_leipzig.bis.queue.QueueActionAddMsg;
+import de.htwk_leipzig.bis.queue.QueueActionNo;
+import de.htwk_leipzig.bis.queue.QueueAgitator;
 import de.htwk_leipzig.bis.timing.TimingClient;
 import de.htwk_leipzig.bis.timing.TimingServer;
 import de.htwk_leipzig.bis.transaction.TxProducer;
@@ -61,6 +61,16 @@ public class Amqpstress {
 	private static final int DEFAULT_HEADER_SIZE = 1000;
 	private static final boolean DEFAULT_USE_PERSISTENT_MESSAGE = false;
 
+	/**
+	 * Count of prefetched messages. 0 means infinity.
+	 */
+	public static final int DEFAULT_PREFETCH_COUNT = 0;
+
+	/**
+	 * Amount of prefetched messages in octets. Current value means 512MB.
+	 */
+	public static final int DEFAULT_PREFETCH_AMOUNT = 536_870_912;
+
 	public static void main(String... args) throws Exception {
 		final Options options = new Options();
 		final OptionGroup optionGrp = new OptionGroup();
@@ -74,7 +84,7 @@ public class Amqpstress {
 		optionGrp.addOption(ProgramOptions.AS_LARGE_HEADER);
 		optionGrp.addOption(ProgramOptions.AS_MANY_CHANNEL);
 		optionGrp.addOption(ProgramOptions.AS_TRANSACTION);
-		optionGrp.addOption(ProgramOptions.AS_SLOW_CONNECTION);
+		optionGrp.addOption(ProgramOptions.AS_HANDSHAKE_TRICKLE);
 		optionGrp.addOption(ProgramOptions.AS_STRESS_HEARTBEAT);
 		optionGrp.addOption(ProgramOptions.AS_DROP_CONNECTIONS);
 		options.addOptionGroup(optionGrp);
@@ -152,48 +162,62 @@ public class Amqpstress {
 		}
 		if (cmd.hasOption(ProgramOptions.AS_DOS_MSG.getOpt())) {
 			final ResponseAction responseAction = getResponseType(cmd);
-			System.out.printf("Producer: %d\nConsumer: %d\ninterval: %d\nMessagesize: %d\nPersistent: %s\nAction: %s\n\n", producerCount, consumerCount,
-					interval, messageSize, Boolean.toString(userPersistent), responseAction.toString());
+			System.out.printf(
+					"Producer: %d\nConsumer: %d\ninterval: %d\nMessagesize: %d\nPersistent: %s\nAction: %s\n\n",
+					producerCount, consumerCount, interval, messageSize, Boolean.toString(userPersistent),
+					responseAction.toString());
 
 			/*
 			 * + 5% delay for producer, used to adjust send and receive rate
 			 */
 			int prodInterval = (int) Math.ceil(interval * 1.05);
-			startClients(consumerCount, producerCount, new MessageConsumer(uri, interval, userPersistent, responseAction), new MessageProducer(uri,
-					prodInterval, userPersistent, messageSize));
+
+			/*
+			 * Necessary since the method to set a custom prefetch amount of the
+			 * rabbitmq server is currently not implemented.
+			 */
+			int prefetchCount = calcPrefetchCount(DEFAULT_PREFETCH_COUNT, DEFAULT_PREFETCH_AMOUNT / consumerCount,
+					messageSize);
+			startClients(consumerCount, producerCount,
+					new MessageConsumer(uri, interval, prefetchCount, 0, userPersistent, responseAction),
+					new MessageProducer(uri, prodInterval, userPersistent, messageSize));
 
 			System.exit(0);
 		}
 
 		if (cmd.hasOption(ProgramOptions.AS_LARGE_HEADER.getOpt())) {
 			System.out.println("Producer Online - HeaderSize: " + headerSize);
-			startClients(0, producerCount, null , new LargeHeaderProducer(uri, messageSize, headerSize));
+			startClients(0, producerCount, null, new LargeHeaderProducer(uri, messageSize, headerSize));
 			System.exit(0);
 		}
 
 		if (cmd.hasOption(ProgramOptions.AS_MANY_CHANNEL.getOpt())) {
 			System.out.println("Starting Producers and Consumers");
 			final Connection connection = ToolBox.createConnectionFactory(uri).newConnection();
-			startClients(consumerCount, producerCount, new ChannelConsumer(connection), new ChannelProducer(connection, messageSize));
+			startClients(consumerCount, producerCount, new ChannelConsumer(connection),
+					new ChannelProducer(connection, messageSize));
 			connection.close();
 			System.exit(0);
 		}
 
 		if (cmd.hasOption(ProgramOptions.AS_TRANSACTION.getOpt())) {
-			startClients(0, producerCount, null, new TxProducer(uri, messageSize, getMessageCount(cmd), getCommit(cmd)));
+			startClients(0, producerCount, null,
+					new TxProducer(uri, messageSize, getMessageCount(cmd), getCommit(cmd)));
 			System.exit(0);
 		}
 
 		if (cmd.hasOption(ProgramOptions.AS_DOS_QUEUE.getOpt())) {
 			final QueueAction action = getQueueAction(cmd);
-			System.out.printf("QueueSwapper\ninterval: %d\nMessagesize: %d\nPersistent: %s\n\n", interval, messageSize, Boolean.toString(userPersistent));
-			(new QueueSwapper(uri, interval, userPersistent, getPendingCount(cmd), action)).run();
+			System.out.printf("QueueSwapper\ninterval: %d\nMessagesize: %d\nPersistent: %s\n\n", interval, messageSize,
+					Boolean.toString(userPersistent));
+			(new QueueAgitator(uri, interval, userPersistent, getPendingCount(cmd), action)).run();
 			System.exit(0);
 		}
 
-		if (cmd.hasOption(ProgramOptions.AS_SLOW_CONNECTION.getOpt())) {
-			System.out.printf("Slow Trickle\ninterval: %d\n\n", interval, messageSize, Boolean.toString(userPersistent));
-			(new CustomConnection(uri, interval, new HandshakeActionSleep(interval))).run();
+		if (cmd.hasOption(ProgramOptions.AS_HANDSHAKE_TRICKLE.getOpt())) {
+			System.out.printf("Slow Trickle\ninterval: %d\n\n", interval, messageSize,
+					Boolean.toString(userPersistent));
+			(new CustomConnection(uri, interval, new HandshakeActionSleep())).run();
 			System.exit(0);
 		}
 
@@ -205,7 +229,7 @@ public class Amqpstress {
 
 		if (cmd.hasOption(ProgramOptions.AS_DROP_CONNECTIONS.getOpt())) {
 			System.out.printf("Drop Connections\ninterval: %d\n\n", interval);
-			(new ConnectionHanging(uri, interval)).run();
+			(new ConnectionDropping(uri, interval)).run();
 			System.exit(0);
 		}
 
@@ -375,6 +399,17 @@ public class Amqpstress {
 		return naturalNumber;
 	}
 
+	/**
+	 * 
+	 * @param prefetchCount
+	 * @param prefetchAmount
+	 * @param messageSize
+	 * @return
+	 */
+	private static int calcPrefetchCount(final int prefetchCount, final int prefetchAmount, final int messageSize) {
+		return Math.min(prefetchCount, prefetchAmount / messageSize);
+	}
+
 	private static void printHelp(Options options) {
 		final HelpFormatter help = new HelpFormatter();
 		help.printHelp("amqptest", "Options", options, "", true);
@@ -388,76 +423,90 @@ public class Amqpstress {
 		public static final Option HELP_OPT = new Option("h", "help", false, "Show help");
 
 		@SuppressWarnings("static-access")
-		public static final Option URI_OPT = OptionBuilder.isRequired(true).hasArg().withArgName("uri").withDescription("Set uri, required").withLongOpt("uri")
-				.create('u');
+		public static final Option URI_OPT = OptionBuilder.isRequired(true).hasArg().withArgName("uri")
+				.withDescription("Set uri, required").withLongOpt("uri").create('u');
 		public static final Option AS_SERVER_OPT = new Option("ts", "server", false, "Start as timing server");
 		public static final Option AS_CLIENT_OPT = new Option("tc", "client", false, "Start as timing client");
 
 		@SuppressWarnings("static-access")
 		public static final Option AS_DOS_MSG = OptionBuilder.isRequired(false).hasArg().withArgName("responsetyp")
-				.withDescription("DoS with messages, type is one of \"ACK\",\"NO\",\"NACK\",\"REJECT\"").withLongOpt("dosmsg").create("dm");
+				.withDescription("DoS with messages, type is one of \"ACK\",\"NO\",\"NACK\",\"REJECT\"")
+				.withLongOpt("dosmsg").create("dm");
 
 		@SuppressWarnings("static-access")
-		public static final Option AS_LARGE_HEADER = OptionBuilder.isRequired(false).withDescription("Send messages with large header")
-				.withLongOpt("largeheader").create("lh");
+		public static final Option AS_LARGE_HEADER = OptionBuilder.isRequired(false)
+				.withDescription("Send messages with large header").withLongOpt("largeheader").create("lh");
 
 		@SuppressWarnings("static-access")
 		public static final Option AS_MANY_CHANNEL = OptionBuilder.isRequired(false)
-				.withDescription("Send messages over one Connection and many Channels - set over -p and -c").withLongOpt("manych").create("mc");
+				.withDescription("Send messages over one Connection and many Channels - set over -p and -c")
+				.withLongOpt("manych").create("mc");
 
 		@SuppressWarnings("static-access")
-		public static final Option AS_TRANSACTION = OptionBuilder.isRequired(false).withDescription("Used the transaction-mode").withLongOpt("txmode")
-				.create("tx");
+		public static final Option AS_TRANSACTION = OptionBuilder.isRequired(false)
+				.withDescription("Used the transaction-mode").withLongOpt("txmode").create("tx");
 
 		@SuppressWarnings("static-access")
-		public static final Option AS_SLOW_CONNECTION = OptionBuilder.isRequired(false).withDescription("Slow down the connection handshake")
-				.withLongOpt("slowcon").create("sl");
+		public static final Option AS_HANDSHAKE_TRICKLE = OptionBuilder.isRequired(false)
+				.withDescription("Slow down the connection handshake").withLongOpt("slowhand").create("sl");
 
 		@SuppressWarnings("static-access")
-		public static final Option AS_STRESS_HEARTBEAT = OptionBuilder.isRequired(false).withDescription("use small heartbeats to stress server")
-				.withLongOpt("heartbeat").create("hb");
+		public static final Option AS_STRESS_HEARTBEAT = OptionBuilder.isRequired(false)
+				.withDescription("use small heartbeats to stress server").withLongOpt("heartbeat").create("hb");
 
 		@SuppressWarnings("static-access")
 		public static final Option AS_DROP_CONNECTIONS = OptionBuilder.isRequired(false)
-				.withDescription("open connection and immediately close the Socket (Without keep-alive, max. heartbeat) and send TCP RST")
+				.withDescription(
+						"open connection and immediately close the Socket (Without keep-alive, max. heartbeat) and send TCP RST")
 				.withLongOpt("dropcon").create("dc");
 
 		@SuppressWarnings("static-access")
 		public static final Option AS_DOS_QUEUE = OptionBuilder.isRequired(false).hasArgs(1).withArgName("queueAction")
 				.withDescription("DoS with queues, type is one of \"NO\",\"MSG\"").withLongOpt("dosqueue").create("dq");
 
-		public static final Option PERSISTENT_OPT = new Option("mp", "persistent", false, "Set messages/queues persistent");
+		public static final Option PERSISTENT_OPT = new Option("mp", "persistent", false,
+				"Set messages/queues persistent");
 
 		@SuppressWarnings("static-access")
-		public static final Option MESSAGE_SIZE_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("size in bytes").withType(Number.class)
-				.withDescription("Set the size of each message").withLongOpt("msize").create("ms");
+		public static final Option MESSAGE_SIZE_OPT = OptionBuilder.isRequired(false).hasArg()
+				.withArgName("size in bytes").withType(Number.class).withDescription("Set the size of each message")
+				.withLongOpt("msize").create("ms");
 
 		@SuppressWarnings("static-access")
-		public static final Option INTERVAL_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("milliseconds").withType(Number.class)
-				.withDescription("Set interval for a simple action, interpreted as milliseconds").withLongOpt("minterval").create('i');
+		public static final Option INTERVAL_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("milliseconds")
+				.withType(Number.class).withDescription("Set interval for a simple action, interpreted as milliseconds")
+				.withLongOpt("minterval").create('i');
 
 		@SuppressWarnings("static-access")
-		public static final Option CLIENT_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count").withType(Number.class)
-				.withDescription("Set count of parallel running clients").withLongOpt("clients").create("cl");
+		public static final Option CLIENT_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count")
+				.withType(Number.class).withDescription("Set count of parallel running clients").withLongOpt("clients")
+				.create("cl");
 
 		@SuppressWarnings("static-access")
-		public static final Option PRODUCER_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count").withType(Number.class)
-				.withDescription("Set count of parallel running producers").withLongOpt("producer").create('p');
+		public static final Option PRODUCER_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count")
+				.withType(Number.class).withDescription("Set count of parallel running producers")
+				.withLongOpt("producer").create('p');
 		@SuppressWarnings("static-access")
-		public static final Option CONSUMER_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count").withType(Number.class)
-				.withDescription("Set count of parallel running consumers").withLongOpt("consumer").create('c');
+		public static final Option CONSUMER_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count")
+				.withType(Number.class).withDescription("Set count of parallel running consumers")
+				.withLongOpt("consumer").create('c');
 		@SuppressWarnings("static-access")
-		public static final Option PENDING_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count").withType(Number.class)
-				.withDescription("Set count of cached elements, i. e. the count of message to NACK all at once").withLongOpt("pendingcount").create("pc");
+		public static final Option PENDING_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count")
+				.withType(Number.class)
+				.withDescription("Set count of cached elements, i. e. the count of message to NACK all at once")
+				.withLongOpt("pendingcount").create("pc");
 
 		@SuppressWarnings("static-access")
-		public static final Option HEADER_SIZE_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("size").withType(Number.class)
-				.withDescription("Set the size of the Headerfield - Number of entrys").withLongOpt("headersize").create("hs");
+		public static final Option HEADER_SIZE_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("size")
+				.withType(Number.class).withDescription("Set the size of the Headerfield - Number of entrys")
+				.withLongOpt("headersize").create("hs");
 		@SuppressWarnings("static-access")
-		public static final Option COMMIT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("commit").withType(Boolean.class)
-				.withDescription("Set for committing messages - true/false").withLongOpt("commit_messages").create("co");
+		public static final Option COMMIT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("commit")
+				.withType(Boolean.class).withDescription("Set for committing messages - true/false")
+				.withLongOpt("commit_messages").create("co");
 		@SuppressWarnings("static-access")
-		public static final Option MESSAGE_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count").withType(Number.class)
-				.withDescription("Set the number of messages").withLongOpt("massagescount").create("mct");
+		public static final Option MESSAGE_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count")
+				.withType(Number.class).withDescription("Set the number of messages").withLongOpt("massagescount")
+				.create("mct");
 	}
 }
