@@ -318,10 +318,11 @@
 		}{%
 		 -sh (Aufrufparameter für Angriff) \\
 		 -i 0 (Keine Pause zwischen 2 Handshakes) \\
+		 -cl 20 (20 Clients) \\
 		 -u <uri> (URI für Verbindung mit Server) \\
 		 1s Pause in jedem Schritt (Standard) 
 		}{%
-		 Amqpstress -sh -i 0 -u amqp://\\\hspace*{3cm}testc:testp@192.168.178.153:5672/\%2f
+		 Amqpstress -sh -i 0 -cl 20 -u amqp://\\\hspace*{3cm}testc:testp@192.168.178.153:5672/\%2f
 		}
 
 
