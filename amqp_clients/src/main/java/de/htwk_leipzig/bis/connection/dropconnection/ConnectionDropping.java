@@ -1,4 +1,4 @@
-package de.htwk_leipzig.bis.connections.dropconnection;
+package de.htwk_leipzig.bis.connection.dropconnection;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -10,13 +10,13 @@ import com.rabbitmq.client.SocketConfigurator;
 
 import de.htwk_leipzig.bis.util.ToolBox;
 
-public class ConnectionHanging implements Runnable {
+public class ConnectionDropping implements Runnable {
 
 	private final URI mUri;
 	private final int mCreationInterval;
 	private Socket mCurrentSocket;
 		
-	public ConnectionHanging(final URI uri, final int creationInterval) {
+	public ConnectionDropping(final URI uri, final int creationInterval) {
 		mUri = uri;
 		mCreationInterval = creationInterval;
 	}
@@ -37,6 +37,10 @@ public class ConnectionHanging implements Runnable {
 			});
 			do {
 				final Connection connection = factory.newConnection();	
+				
+				/*
+				 * RST packages were blocked by firewall
+				 */
 				mCurrentSocket.close();	
 				Thread.sleep(mCreationInterval);
 			} while (true);

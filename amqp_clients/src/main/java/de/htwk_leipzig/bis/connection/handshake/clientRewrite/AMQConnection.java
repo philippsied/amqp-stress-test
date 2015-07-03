@@ -13,7 +13,7 @@
 //The Initial Developer of the Original Code is GoPivotal, Inc.
 //Copyright (c) 2007-2014 GoPivotal, Inc.  All rights reserved.
 //
-package de.htwk_leipzig.bis.connections.slowConnection.clientRewrite;
+package de.htwk_leipzig.bis.connection.handshake.clientRewrite;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -60,8 +60,8 @@ import com.rabbitmq.client.impl.ShutdownNotifierComponent;
 import com.rabbitmq.client.impl.Version;
 import com.rabbitmq.utility.BlockingCell;
 
-import de.htwk_leipzig.bis.connections.slowConnection.HandshakeAction;
-import de.htwk_leipzig.bis.connections.slowConnection.clientRewrite.AMQChannel.BlockingRpcContinuation;
+import de.htwk_leipzig.bis.connection.handshake.HandshakeAction;
+import de.htwk_leipzig.bis.connection.handshake.clientRewrite.AMQChannel.BlockingRpcContinuation;
 
 final class Copyright {
 	final static String COPYRIGHT = "Copyright (C) 2007-2014 GoPivotal, Inc.";
@@ -362,7 +362,7 @@ public class AMQConnection extends ShutdownNotifierComponent implements Connecti
 			/*
 			 * Custom action during handshake
 			 */
-//			mHandshakeAction.doAction();
+			mHandshakeAction.doAction();
 
 			do {
 				Method method = (challenge == null) ? new AMQP.Connection.StartOk.Builder().clientProperties(_clientProperties).mechanism(sm.getName())
@@ -371,7 +371,7 @@ public class AMQConnection extends ShutdownNotifierComponent implements Connecti
 				/*
 				 * Custom action during handshake
 				 */
-//				mHandshakeAction.doAction();
+				mHandshakeAction.doAction();
 
 				try {
 					Method serverResponse = _channel0.rpc(method).getMethod();
@@ -379,7 +379,7 @@ public class AMQConnection extends ShutdownNotifierComponent implements Connecti
 					/*
 					 * Custom action during handshake
 					 */
-//					mHandshakeAction.doAction();
+					mHandshakeAction.doAction();
 
 					if (serverResponse instanceof AMQP.Connection.Tune) {
 						connTune = (AMQP.Connection.Tune) serverResponse;

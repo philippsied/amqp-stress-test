@@ -1,4 +1,4 @@
-package de.htwk_leipzig.bis.connections.heartbeat;
+package de.htwk_leipzig.bis.connection.heartbeat;
 
 import static com.google.common.base.Preconditions.checkArgument;
 

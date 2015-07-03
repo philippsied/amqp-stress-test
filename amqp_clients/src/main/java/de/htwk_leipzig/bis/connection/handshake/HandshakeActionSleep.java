@@ -1,11 +1,10 @@
-package de.htwk_leipzig.bis.connections.slowConnection;
+package de.htwk_leipzig.bis.connection.handshake;
 
 
 public class HandshakeActionSleep implements HandshakeAction {
-	private final long mDelay;
+	private final long DELAY = 1000;
 
-	public HandshakeActionSleep(final long delay) {
-		mDelay = delay;
+	public HandshakeActionSleep() {
 	}
 
 	@Override
@@ -14,8 +13,7 @@ public class HandshakeActionSleep implements HandshakeAction {
 		 * Add delay
 		 */
 		try {
-			Thread.sleep(mDelay);
-			System.out.println("Sleep for "+ mDelay + "ms");
+			Thread.sleep(DELAY);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}

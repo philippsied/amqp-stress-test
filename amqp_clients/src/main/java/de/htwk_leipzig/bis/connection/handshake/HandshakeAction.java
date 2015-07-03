@@ -1,4 +1,4 @@
-package de.htwk_leipzig.bis.connections.slowConnection;
+package de.htwk_leipzig.bis.connection.handshake;
 
 /**
  * Represents an action that is performed between the steps of the AMQ Connection handeshake for

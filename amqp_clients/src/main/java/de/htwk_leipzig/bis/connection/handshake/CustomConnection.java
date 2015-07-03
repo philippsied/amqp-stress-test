@@ -1,4 +1,4 @@
-package de.htwk_leipzig.bis.connections.slowConnection;
+package de.htwk_leipzig.bis.connection.handshake;
 
 import java.net.URI;
 
@@ -64,8 +64,8 @@ public class CustomConnection implements Runnable {
 			do {
 				final ConnectionFactory factory = new CustomConnectionFactory(mAction);
 				factory.setUri(mUri);
-				factory.setShutdownTimeout(Integer.MAX_VALUE);
-				factory.setConnectionTimeout(Integer.MAX_VALUE);
+//				factory.setShutdownTimeout(Integer.MAX_VALUE);
+//				factory.setConnectionTimeout(Integer.MAX_VALUE);
 				final Connection connection = factory.newConnection();
 				connection.close();
 				Thread.sleep(mDelay);

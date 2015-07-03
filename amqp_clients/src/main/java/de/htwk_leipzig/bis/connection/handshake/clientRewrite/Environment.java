@@ -1,4 +1,4 @@
-package de.htwk_leipzig.bis.connections.slowConnection.clientRewrite;
+package de.htwk_leipzig.bis.connection.handshake.clientRewrite;
 
 import java.util.concurrent.ThreadFactory;
 

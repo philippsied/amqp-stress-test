@@ -1,4 +1,4 @@
-package de.htwk_leipzig.bis.connections.slowConnection;
+package de.htwk_leipzig.bis.connection.handshake;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -11,7 +11,7 @@ import com.rabbitmq.client.impl.FrameHandler;
 import com.rabbitmq.client.impl.FrameHandlerFactory;
 import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 
-import de.htwk_leipzig.bis.connections.slowConnection.clientRewrite.AMQConnection;
+import de.htwk_leipzig.bis.connection.handshake.clientRewrite.AMQConnection;
 
 public class CustomConnectionFactory extends ConnectionFactory {
 
