@@ -8,10 +8,10 @@ I.e. to create the visualisation for TCP dropping scenario run:
 
 `bash transformToJson.sh "TCP dropping" tcpdrop.csv tcpdrop.json`
 
-The string "TCP dropping" appear in the headline of the HTML-file
+The string "TCP dropping" will appear in the headline of the HTML-file.
 
-## 2. Show your results and if necessary adjust the visualisation
+## 2. Look at your results and, if necessary, adjust the visualisation
 
-Open the **results.html** file in your web browser and the measured values should be visibile.
+Open the **results.html** file in your web browser and the measured values should be clearly visible.
 
-If something looks clipped off or inaccurate scaled, use the div attributes of the div-classes named **chart**.
+If something looks clipped off or inaccurate scaled, use the div attributes of the div-classes named **chart** to adjust the charts.
