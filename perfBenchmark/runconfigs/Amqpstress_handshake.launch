@@ -8,8 +8,8 @@
 </listAttribute>
 <stringAttribute key="org.eclipse.jdt.launching.CLASSPATH_PROVIDER" value="org.eclipse.m2e.launchconfig.classpathProvider"/>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="de.htwk_leipzig.bis.main.Amqpstress"/>
-<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="-hb -i 1 -cl 20 -u amqp://testc:testp@192.168.178.153:5672/%2f"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="-sh -i 0 -u amqp://testc:testp@192.168.178.153:5672/%2f"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="amqp_clients"/>
 <stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.eclipse.m2e.launchconfig.sourcepathProvider"/>
 <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Xms2560m -XX:+UseConcMarkSweepGC"/>
-</launchConfiguration>
+</launchConfiguratioe>
