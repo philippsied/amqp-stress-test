@@ -187,7 +187,7 @@ public class Amqpstress {
 
 		if (cmd.hasOption(ProgramOptions.AS_LARGE_HEADER.getOpt())) {
 			System.out.println("Producer Online - HeaderSize: " + headerSize);
-			startClients(0, producerCount, null, new LargeHeaderProducer(uri, messageSize, headerSize));
+			startClients(0, producerCount, null, new LargeHeaderProducer(uri, messageSize, headerSize,interval));
 			System.exit(0);
 		}
 
@@ -448,7 +448,7 @@ public class Amqpstress {
 
 		@SuppressWarnings("static-access")
 		public static final Option AS_HANDSHAKE_TRICKLE = OptionBuilder.isRequired(false)
-				.withDescription("Slow down the connection handshake").withLongOpt("slowhand").create("sl");
+				.withDescription("Slow down the connection handshake").withLongOpt("slowhand").create("sh");
 
 		@SuppressWarnings("static-access")
 		public static final Option AS_STRESS_HEARTBEAT = OptionBuilder.isRequired(false)

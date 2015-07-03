@@ -37,6 +37,11 @@ public class LargeHeaderProducer extends AMQPSubscriber {
 	private final BasicProperties mProb;
 
 	/**
+	 * Member variable to hold the interval between two Generate&Publish events.
+	 */
+	private int mProduceInterval;
+
+	/**
 	 * Creates a new instance of {@code LargeHeaderProducer} with the given uri,
 	 * message size and header size.
 	 * 
@@ -46,12 +51,15 @@ public class LargeHeaderProducer extends AMQPSubscriber {
 	 *            the given message sizes
 	 * @param headerSize
 	 *            the given header sizes
+	 * @param produceInterval
+	 *            the given interval
 	 */
-	public LargeHeaderProducer(URI uri, int messageSizeInBytes, int headerSize) {
+	public LargeHeaderProducer(URI uri, int messageSizeInBytes, int headerSize, int produceInterval) {
 		super(uri);
-		this.mHeaderSize = headerSize;
-		this.mProb = generateHeader();
-		this.mMessageSizeInBytes = messageSizeInBytes;
+		mHeaderSize = headerSize;
+		mProb = generateHeader();
+		mMessageSizeInBytes = messageSizeInBytes;
+		mProduceInterval = produceInterval;
 	}
 
 	/**
@@ -71,8 +79,7 @@ public class LargeHeaderProducer extends AMQPSubscriber {
 			headers.put("header" + i, UUID.randomUUID().toString());
 		}
 
-		builder.deliveryMode(MessageProperties.PERSISTENT_TEXT_PLAIN
-				.getDeliveryMode());
+		builder.deliveryMode(MessageProperties.PERSISTENT_TEXT_PLAIN.getDeliveryMode());
 		builder.priority(MessageProperties.PERSISTENT_TEXT_PLAIN.getPriority());
 		builder.headers(headers);
 
@@ -85,8 +92,7 @@ public class LargeHeaderProducer extends AMQPSubscriber {
 	 * @see de.htwk_leipzig.bis.util.AMQPSubscriber#doSubscriberActions()
 	 */
 	@Override
-	protected void doSubscriberActions(Connection connection, Channel channel)
-			throws Exception {
+	protected void doSubscriberActions(Connection connection, Channel channel) throws Exception {
 		channel.queueDeclare(QUEUE_NAME, false, false, false, null);
 
 		byte[] message;
@@ -100,6 +106,7 @@ public class LargeHeaderProducer extends AMQPSubscriber {
 
 		while (true) {
 			channel.basicPublish("", QUEUE_NAME, mProb, message);
+			Thread.sleep(mProduceInterval);
 		}
 	}
 
