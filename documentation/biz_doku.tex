@@ -195,11 +195,10 @@
 		 Ein Producer erzeugt kontinuierlich Nachrichten gewisser Größe mit zufälligem Inhalt, die von einem oder mehreren Consumern empfangen, aber nicht quittiert werden.
 		 Der RabbitMQ-Server ist somit gezwungen, die Nachrichten in der Queue zwischenzuspeichern.
 		}{%
-		 -dm NO (Auf
-		 rufparameter für Angriff) \\
+		 -dm NO (Aufrufparameter für Angriff) \\
 		 -c 5 (5 Consumer) \\
 		 -i 10 (10ms Pause zwischen 2 Consumer/Producer-Anfragen) \\
-		 -ms 10240 (Messagegröße: 10KB) \\
+		 -ms 10240 (Nachrichtengröße: 10KB) \\
 		 -u <uri> (URI für Verbindung mit Server) \\
 		 1 Producer (Standard) \\
 		 Nicht-Persistente Nachrichten (Standard)
@@ -216,15 +215,14 @@
 		 -dm REJECT (Aufrufparameter für Angriff) \\
 		 -c 5 (5 Consumer) \\
 		 -i 10 (10ms Pause zwischen 2 Consumer/Producer-Anfragen) \\
-		 -ms 10240 (Messagegröße: 10KB) \\
+		 -ms 10240 (Nachrichtengröße: 10KB) \\
 		 -u <uri> (URI für Verbindung mit Server) \\
 		 1 Producer (Standard) \\
 		 Nicht-Persistente Nachrichten (Standard)
 		}{%
-		 Amqpstress -dm REJECT -c 5 -i 10 -ms 102400 -mp -u amqp://testc:testp@192.168.178.153:5672/\%2f
+		 Amqpstress -dm REJECT -c 5 -i 10 -ms 10240 -mp -u amqp://testc:testp@192.168.178.153:5672/\%2f
 		}
 		
-	
 	
 	\attack{Gebündeltes Abweisen von Nachrichten}%
 		{%
@@ -234,12 +232,12 @@
 		 Schwellwert: 1000 Nachrichten (Standard) \\
 		 -c 5 (5 Consumer) \\
 		 -i 10 (10ms Pause zwischen 2 Consumer/Producer-Anfragen) \\
-		 -ms 10240 (Messagegröße: 10KB) \\
+		 -ms 10240 (Nachrichtengröße: 10KB) \\
 		 -u <uri> (URI für Verbindung mit Server) \\
 		 1 Producer (Standard) \\
 		 Nicht-Persistente Nachrichten (Standard)
 		}{%
-		 Amqpstress -dm NACK -c 5 -i 10 -ms 102400 -u amqp://testc:testp@192.168.178.153:5672/\%2f
+		 Amqpstress -dm NACK -c 5 -i 10 -ms 10240 -u amqp://testc:testp@192.168.178.153:5672/\%2f
 		}
 		
 
@@ -247,15 +245,14 @@
 		{%
 		 Ein Client erzeugt bis zu einem Schwellwert Queues und befüllt sie optional mit einer zufälligen Nachricht gegebener Größe. Wenn der Schwellwert an erzeugten Queues erreicht ist, werden alle Queues ohne zu Warten gelöscht und der Zyklus beginnt erneut. Der RabbitMQ-Server muss die Überreste der Queues im RAM bzw. der Festplatte bereinigen, während neue Queues angelegt und befüllt werden.
 		}{%
-		 -dq (Aufrufparameter für Angriff) \\
-		 -pc 10 (Schwellwert: 10 Queues) \\
-		 -i 10 (10ms Pause zwischen 2 Consumer/Producer-Anfragen) \\
-		 -ms 0 (Keine Nachrichten senden) \\
+		 -dq NO (Aufrufparameter für Angriff -Ohne Nachrichten) \\
+		 -i 1 (1ms Pause zwischen Queue-Erzeugung) \\
+		 -pc 100000 (Schwellwert: 100000 Queues) \\
 		 -u <uri> (URI für Verbindung mit Server) \\
 		 1 Client - Consumer und Producer zugleich (Standard) \\
-		 Nicht-Persistente Nachrichten (Standard)
+		 Nicht-Persistente Nachrichten/Queues (Standard)
 		}{%
-		 Amqpstress -dq -pc 10 -i 10 -ms 0 -u amqp://testc:testp@192.168.178.153:5672/\%2f
+		 Amqpstress -dq NO -i 1 -pc 100000 -u amqp://testc:testp@192.168.178.153:5672/\%2f
 		}
 		
 		
@@ -265,11 +262,12 @@
 		 RabbitMQ bietet die Möglichkeit im Header der Nachricht bestimmt Parameter für die Weiterleitung zu deklarieren. Dieser Test beschäftigt sich mit der Auswirkung, wenn der Header unnötig ausgelastet wird. Das System ist gezwungen alle Weiterleitungsoptionen zu Prüfen, auch wenn diese keinem Ziel entsprechen.
 		}{%
 		 -lh (Aufrufparameter für Angriff) \\
-		 -ms 10000 (Messagegröße: 10000 Byte) \\
+		 -i 10 (10ms Pause zwischen 2 Anfragen)
+		 -ms 10000 (Nachrichtengröße: 10000 Byte) \\
 		 -hs 2500 (Headergröße - Anzahl Einträge in Map) \\
 		 -u <uri> (URI für Verbindung mit Server)
 		}{%
-		 Amqpstress -lh -ms 10000 -hs 2500 -u amqp://testc:testp@192.168.178.153:5672/\%2f
+		 Amqpstress -lh -i 10 -ms 10000 -hs 2500 -u amqp://testc:testp@192.168.178.153:5672/\%2f
 		}
 
 		
@@ -279,12 +277,12 @@
 		 Auf Basis einer einzelnen Verbindung wird das System so ausgelastet und beobachtet.
 		}{%
 		 -mc (Aufrufparameter für Angriff) \\
-		 -ms 10000 (Messagegröße: 10000 Byte) \\
-		 -u <uri> (URI für Verbindung mit Server) \\
 		 -p 100 (100 Producer) \\
-		 -c 10 (10 Consumer)
+		 -c 10 (10 Consumer) \\
+		 -ms 10000 (Nachrichtengröße: 10000 Byte) \\
+		 -u <uri> (URI für Verbindung mit Server) \\		 
 		}{%
-		 Amqpstress -mc -p 100 -c 10 -ms 10000 -u amqp://testc:testp@192.168.178.153:5672/\%2f
+		 Amqpstress -mc -p 100 -c 10 ms 10000 -u amqp://testc:testp@192.168.178.153:5672/\%2f
 		}
 
 
@@ -295,23 +293,25 @@
 		 Zu untersuchen wäre die Situation, wenn permanent Nachrichten ohne commit gesendet werden - der Server muss die Nachrichten dann im Speicher belassen.
 		}{%
 		 -tx (Aufrufparameter für Angriff) \\
-		 -p 100 (100 Producer) \\
-		 -ms 10000 (Messagegröße: 10000 Byte) \\
-		 -mct 10000 (Nachrichtenanzahl pro Producer: 10000) \\
-		 -co false (Commit der Transaktion - hier: Auslassen) \\
-		 -u <uri> (URI für Verbindung mit Server)
+		 -p 5 (5 Producer) \\
+		 -ms 10240 (Nachrichtengröße: 10KB) \\
+		 -mct 100000 (Nachrichtenanzahl pro Producer: 100000) \\
+		 -u <uri> (URI für Verbindung mit Server) \\
+		 Commit auslassen (Standard)
 		}{%
-		 Amqpstress -tx -p 100 -ms 10000 -mct 10000 -co false -u amqp://testc:testp@192.168.178.153:5672/\%2f
+		 Amqpstress -tx -p 5 ms 10240 -mct 100000 -u amqp://testc:testp@192.168.178.153:5672/\%2f
 		}
 	
 	
 	\attack{Handshake-Trickle}%
 		{%
-		 .
+		 In 9 Schritten 1s Pause
 		}{%
+		 -sh (Aufrufparameter für Angriff) \\
+		 -i 0 (Keine Pause zwischen Ende Handshake und Beginn neuem Handshake) \\
 		 -u <uri> (URI für Verbindung mit Server)
 		}{%
-		 Amqpstress -u amqp://testc:testp@192.168.178.153:5672/\%2f
+		 Amqpstress -sh -i 0 -u amqp://testc:testp@192.168.178.153:5672/\%2f
 		}
 
 
@@ -319,9 +319,12 @@
 		{%
 		 .
 		}{%
+		 -hb (Aufrufparameter für Angriff) \\
+		 -i 1 (1s Heartbeat Timeout) \\
+		 -cl 20 (20 Clients) \\
 		 -u <uri> (URI für Verbindung mit Server)
 		}{%
-		 Amqpstress -u amqp://testc:testp@192.168.178.153:5672/\%2f
+		 Amqpstress -hb -i 1 -cl 20 -u amqp://testc:testp@192.168.178.153:5672/\%2f
 		}
 
 
@@ -329,9 +332,11 @@
 		{%
 		 .
 		}{%
+		 -dc (Aufrufparameter für Angriff) \\
+		 -i 100 (100ms Pause zwischen Connection Erzeugung) \\
 		 -u <uri> (URI für Verbindung mit Server)
 		}{%
-		 Amqpstress  -u amqp://testc:testp@192.168.178.153:5672/\%2f
+		 Amqpstress -dc -i 100 -u amqp://testc:testp@192.168.178.153:5672/\%2f
 		}
 	
 
@@ -529,35 +534,28 @@
 	\clearpage
 	\report{Ausbleiben von Commits im Transaktionsmodus}%
 		{
-		 \measure{CPU}{ \%} \newline
-		 \measure{RAM}{ MB (Verwendet)} \newline
-		 \measure{HDD}{ MB (Frei)} \newline
-		 \measure{NET}{RCX  bit/s\quad TRX  bit/s}%
+		 \measure{CPU}{2\%} \newline
+		 \measure{RAM}{955MB (Verwendet)} \newline
+		 \measure{HDD}{785MB (Frei)} \newline
+		 \measure{NET}{RCX 924kbit/s\quad TRX 83bit/s}%
 		}{
-		 Durch Auslassen des Commits steigt der Speicherverbrauch stark an. Nach wenigen Sekunden ist die Speichergrenze erreicht und keine weiteren Nachrichten werden übertragen. Daraufhin verharren alle Producer bis der Speicher wieder freigegeben wird (Falls Consumer vorhanden)
+		 Durch Auslassen des Commits steigt der Speicherverbrauch stark an. Nach wenigen Sekunden ist die Speichergrenze erreicht und keine weiteren Nachrichten werden übertragen. Daraufhin verharren alle Producer bis der Speicher wieder freigegeben wird (Falls Consumer vorhanden).
 		}{
-		 Sporadisch friert der RabbitMQ-Server bei diesem Versuch ein. Ein Aufbau einer neuen Verbindung schlägt fehl und die Weboberfläche ist nicht mehr erreichbar. Nach längerer Zeit (etwa 10 Minuten) baut der Server aber wieder die Verbindungen ab und ein Zugriff ist wieder möglich. Dennoch bleibt der Speicherverbrauch bestehen.
+		 Die Messung des Andwendungsszenario konnte bei diesem Angriff nicht durchgeführt werden, da das dafür verwendete Tool \glqq HTML Performance Tools\grqq\ bei der Messung reproduzierbar einfriert.
 		}
 
 		\begin{figure}[!htb]
 			\centering
-			\includegraphics[width=\textwidth]{img/stub.png}
+			\includegraphics[width=\textwidth]{img/tx/tx_server1.png}
 			\caption{Ausbleiben von Commits im Transaktionsmodus - Verlauf des Speicherbedarfs für RAM/HDD und Verlauf der CPU-Last auf dem RabbitMQ-Server}
 			\label{fig:commit-server1}
 		\end{figure}
 		
 		\begin{figure}[!htb]
 			\centering
-			\includegraphics[width=\textwidth]{img/stub.png}
+			\includegraphics[width=\textwidth]{img/tx/tx_server1.png}
 			\caption{Ausbleiben von Commits im Transaktionsmodus - Verlauf der Transfer-, Empfangsrate und Verlauf der CPU-Last auf dem RabbitMQ-Server}
 			\label{fig:commit-server2}
-		\end{figure}
-		
-		\begin{figure}[!htb]
-			\centering
-			\includegraphics[width=\textwidth]{img/stub.png}
-			\caption{Ausbleiben von Commits im Transaktionsmodus - Verlauf der Transfer-, Empfangsrate und Verlauf der Latenz im Anwendungsszenario}
-			\label{fig:commit-scenario}
 		\end{figure}
 	
 	
@@ -565,38 +563,30 @@
 	\clearpage
 	\report{Nachrichten mit großem Header}%
 		{%
-		 \measure{CPU}{ \%} \newline
-		 \measure{RAM}{ MB (Verwendet)} \newline
-		 \measure{HDD}{ MB (Frei)} \newline
-		 \measure{NET}{RCX  bit/s\quad TRX  bit/s}%
+		 \measure{CPU}{2\%} \newline
+		 \measure{RAM}{468MB (Verwendet)} \newline
+		 \measure{HDD}{391MB (Frei)} \newline
+		 \measure{NET}{RCX  2.8Mbit/s\quad TRX 33kbit/s}%
 		}{%
-		 Die Anwendung generiert zu Beginn 2500 Weiterleitungsoptionen (Bestehend aus 8 Byte Key und 36 Byte Value = 44 Byte pro Eintrag) und schreibt sie in den Header jeder Nachricht. Hierdurch ist das System stark ausgelastet und der Durchsatz der Nachrichten schrumpft stark auf 10 - 20 Nachrichten pro Sekunde. Es macht keinen Unterschied ob der Key oder Value vergrößert wird, die geringe Übertragungsrate bleibt bestehen. Der Value wird daher nicht ausgewertet. Die CPU Last liegt bei 10 -15\%
+		 Die Anwendung generiert zu Beginn 2500 Weiterleitungsoptionen (Bestehend aus 8 Byte Key und 36 Byte Value = 44 Byte pro Eintrag) und schreibt sie in den Header jeder Nachricht. Hierdurch ist das System stark ausgelastet und der Durchsatz der Nachrichten schrumpft stark auf 10 - 20 Nachrichten pro Sekunde. Es macht keinen Unterschied ob der Key oder Value vergrößert wird, die geringe Übertragungsrate bleibt bestehen. Der Value wird daher nicht ausgewertet. Die Headergröße ist bei etwa 2500 Weiterleitungsoptionen begrenzt. Wird diese überschritten lässt das System die Verbindung fallen, aufgrund einer zu großen Framegröße. Die Framegröße lässt sich beim Aufbau der Verbindung angeben, kann aber die bereits voreingestellten eingestellten 128 Byte nicht überschreiten.
 		}{%
-		 Die Headergröße ist bei etwa 2500 Weiterleitungsoptionen begrenzt. Wird diese überschritten lässt das System die Verbindung fallen, aufgrund einer zu großen Framegröße. Die Framegröße lässt sich beim Aufbau der Verbindung angeben, kann aber die bereits voreingestellten eingestellten 128 Byte nicht überschreiten.
+		 Die Messung des Andwendungsszenario konnte bei diesem Angriff nicht durchgeführt werden, da das dafür verwendete Tool \glqq HTML Performance Tools\grqq\ bei der Messung reproduzierbar einfriert.
 		}
 
 		\begin{figure}[!htb]
 			\centering
-			\includegraphics[width=\textwidth]{img/stub.png}
+			\includegraphics[width=\textwidth]{img/header/header_server1.png}
 			\caption{Nachrichten mit großem Header - Verlauf des Speicherbedarfs für RAM/HDD und Verlauf der CPU-Last auf dem RabbitMQ-Server}
 			\label{fig:header-server1}
 		\end{figure}
 		
 		\begin{figure}[!htb]
 			\centering
-			\includegraphics[width=\textwidth]{img/stub.png}
+			\includegraphics[width=\textwidth]{img/header/header_server2.png}
 			\caption{Nachrichten mit großem Header - Verlauf der Transfer-, Empfangsrate und Verlauf der CPU-Last auf dem RabbitMQ-Server}
 			\label{fig:header-server2}
 		\end{figure}
-		
-		\begin{figure}[!htb]
-			\centering
-			\includegraphics[width=\textwidth]{img/stub.png}
-			\caption{Nachrichten mit großem Header - Verlauf der Transfer-, Empfangsrate und Verlauf der Latenz im Anwendungsszenario}
-			\label{fig:header-scenario}
-		\end{figure}
-		
-		
+				
 		\begin{table}[!htb]
 			\centering
 			\begin{tabular}{p{3cm}ll|p{3cm}}
@@ -617,33 +607,33 @@
 	\clearpage
 	\report{Channel-Flooding}%
 		{%
-		 \measure{CPU}{ \%} \newline
-		 \measure{RAM}{ MB (Verwendet)} \newline
-		 \measure{HDD}{ MB (Frei)} \newline
-		 \measure{NET}{RCX  bit/s\quad TRX  bit/s}%
+		 \measure{CPU}{76\%} \newline
+		 \measure{RAM}{298MB (Verwendet)} \newline
+		 \measure{HDD}{785MB (Frei)} \newline
+		 \measure{NET}{RCX 116.7Mbit/s\quad TRX 205.0Mbit/s}
 		}{%
-		 Das System ist stark ausgelastet. Ähnelt aber der Auslastung unter der Erstellung mehrerer Verbindungen. Allerdings beansprucht  der Aufbau der Channel extrem viel Zeit. Nach Aufbau aller Kanäle bricht die Übertragungsrate stark ein. Dabei liegt die CPU-Last bei etwa 45 - 55\%
+		 Das System ist stark ausgelastet. Ähnelt aber der Auslastung unter der Erstellung mehrerer Verbindungen. Allerdings beansprucht  der Aufbau der Channel extrem viel Zeit. Nach Aufbau aller Kanäle bricht die Übertragungsrate stark ein.
 		}{%
 		 Zeit für Aufbau der Channel hängt stark von der Anzahl von Producer und Consumer ab. Nachfolgend zeigt sich ein Vergleich von mehreren Kanälen sowie mehreren Verbindungen.
 		}
 
 		\begin{figure}[!htb]
 			\centering
-			\includegraphics[width=\textwidth]{img/stub.png}
+			\includegraphics[width=\textwidth]{img/channel/channel_server1.png}
 			\caption{Channel-Flooding - Verlauf des Speicherbedarfs für RAM/HDD und Verlauf der CPU-Last auf dem RabbitMQ-Server}
 			\label{fig:channel-server1}
 		\end{figure}
 		
 		\begin{figure}[!htb]
 			\centering
-			\includegraphics[width=\textwidth]{img/stub.png}
+			\includegraphics[width=\textwidth]{img/channel/channel_server2.png}
 			\caption{Channel-Flooding - Verlauf der Transfer-, Empfangsrate und Verlauf der CPU-Last auf dem RabbitMQ-Server}
 			\label{fig:channel-server2}
 		\end{figure}
 		
 		\begin{figure}[!htb]
 			\centering
-			\includegraphics[width=\textwidth]{img/stub.png}
+			\includegraphics[width=\textwidth]{img/channel/channel_scenario.png}
 			\caption{Channel-Flooding - Verlauf der Transfer-, Empfangsrate und Verlauf der Latenz im Anwendungsszenario}
 			\label{fig:channel-scenario}
 		\end{figure}
@@ -680,7 +670,7 @@
 		 \measure{HDD}{785MB (Frei)} \newline
 		 \measure{NET}{RCX 293kbit/s\quad TRX 355kbit/s}
 		}{%
-		 1.4ms Latenz; 50Nachrichten/s
+		 1.4ms Latenz; 50Nachrichten/s; Handshake Timout bei 10s, ignoriert Anfrage zum heraufsetzen.
 		}{%
 		. 
 		}
@@ -779,7 +769,11 @@
 		\end{figure}
 		
 		
-		
+\clearpage
+\section*{Ausblick}
+
+
+
 
 \clearpage
 \section*{Zusammenfassung und Fazit}
