@@ -23,6 +23,10 @@ public class HeartbeatStressor implements Runnable {
 		this(uri, DEFAULT_HEARTBEAT_TIMOUT, connectionCount, DEFAULT_CREATION_DELAY);
 	}
 
+	public HeartbeatStressor(final URI uri, final int heartbeatTimout, final int connectionCount) {
+		this(uri, heartbeatTimout, connectionCount, DEFAULT_CREATION_DELAY);
+	}
+	
 	public HeartbeatStressor(final URI uri, final int heartbeatTimout, final int connectionCount, final int creationDelay) {
 		checkArgument(connectionCount > 0);
 		mUri = uri;
