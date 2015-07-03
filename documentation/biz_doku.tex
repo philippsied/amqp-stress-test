@@ -807,9 +807,18 @@
 		
 		
 \clearpage
+
 \section*{Ausblick}
 
+\paragraph{SYN Flood-Angriff} SYN-Flooding ist eines der ältesten Angriffe, dennoch aktuell und von großer Bedeutung. Bei dem Aufbau einer Verbindung zwischen Client und Server wird ein 3-Wege-Handshake durchgeführt. Die Idee hinter diesem Angriff ist es möglichst viele SYN-Pakete zu versenden, um so die Ressourcen des Servers auszulasten. Durch das Ignorieren der Rückantwort (ACK) des Angreifers, wird der Server dennoch gezwungen einige Zeit auf das entsprechende Paket zu warten.
 
+Die SYN-Pakete sind einfach zu erzeugen und entsprechend klein. Hierdurch ist es möglich den Server schnell auszulasten und somit einen Denial-of-Service (DoS) zu bezwecken. Auch bei einem RabbitMQ-Server ist dieser Angriff möglich, denn jede offene Anfrage zum Aufbauen einer Verbindung wird für 10 Sekunden gehalten. Genügend Zeit um alle Socket-Deskriptoren zu belegen. Auf dem unseren Test-System stehen nur 1024 zur Verfügung, welche nur in wenigen Sekunden ausgeschöpft sind. Das bedeutet, dass für eine ernst gemeinte Verbindung keine Ressourcen mehr zur Verfügung stehen. Die Wartezeit lässt sich über die config-Datei \glqq rabbitmq.config\grqq\ beliebig anpassen, bietet dennoch keinen Schutz vor diesen Angriff.
+
+\section*{Zusammenfassung}
+
+An dieser Stelle sollen noch einmal alle gesammelten Erfahrungen zusammentragen werden. RabbitMQ ist in der getesteten Version (3.5.3) ein sehr stabiler Message-Broker und dient zur verteilten Bearbeitung von Aufgaben und Entkopplung von Applikationsteilen. Dennoch zeigten sich unter allen getesteten Angriffsvektoren teils starke veränderte Messwerte in Bezug auf die Übertragungsrate oder der Ressourcen des Servers selbst. Viele Ergebnisse zeigten, dass das Auslagern der Nachrichten vom Arbeitsspeicher auf die Festplatte Auswirkungen auf den Server hat. Können die Nachrichten nicht mehr im Arbeitsspeicher gehalten werden, konzentrieren sich die Ressourcen auf das Auslagern und die Clients werden weitgehend zurückgehalten. Somit zeichnet sich eine geringe Übertragungsrate der Nachrichten aus. Erst nach Beendigung des Schreibvorgangs steigt die Übertragungsrate wieder an. Da der Server in unserem Projekt auf einer virtuellen Maschine beruht und somit stark eingeschränkt ist, zeichnen sich die Unterschiede hier sehr stark ab.
+
+Werden im Transaktionsmodus zu viele Producer angelegt, welche ihre Nachrichten nicht committen, kam es sporadisch zu einen Ausfall des Servers. Selbst die Weboberfläche konnte nicht mehr erreicht werden. Nach einiger Zeit löst der Server dennoch die Verbindungen wieder auf und ist anschließend wieder erreichbar. 
 
 
 
