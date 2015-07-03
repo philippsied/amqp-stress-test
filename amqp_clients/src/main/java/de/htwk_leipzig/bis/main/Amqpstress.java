@@ -187,7 +187,7 @@ public class Amqpstress {
 
 		if (cmd.hasOption(ProgramOptions.AS_LARGE_HEADER.getOpt())) {
 			System.out.println("Producer Online - HeaderSize: " + headerSize);
-			startClients(0, producerCount, null, new LargeHeaderProducer(uri, messageSize, headerSize));
+			startClients(0, producerCount, null, new LargeHeaderProducer(uri, messageSize, headerSize,interval));
 			System.exit(0);
 		}
 
@@ -201,6 +201,7 @@ public class Amqpstress {
 		}
 
 		if (cmd.hasOption(ProgramOptions.AS_TRANSACTION.getOpt())) {
+			
 			startClients(0, producerCount, null,
 					new TxProducer(uri, messageSize, getMessageCount(cmd), getCommit(cmd)));
 			System.exit(0);
@@ -222,8 +223,8 @@ public class Amqpstress {
 		}
 
 		if (cmd.hasOption(ProgramOptions.AS_STRESS_HEARTBEAT.getOpt())) {
-			System.out.printf("Stress with Heartbeats\nConnections: %d\n\n", clientCount);
-			(new HeartbeatStressor(uri, clientCount)).run();
+			System.out.printf("Stress with Heartbeats\nHeartbeatinterval: %d\nConnections: %d\n\n", interval, clientCount);
+			(new HeartbeatStressor(uri, interval , clientCount)).run();
 			System.exit(0);
 		}
 
@@ -448,11 +449,11 @@ public class Amqpstress {
 
 		@SuppressWarnings("static-access")
 		public static final Option AS_HANDSHAKE_TRICKLE = OptionBuilder.isRequired(false)
-				.withDescription("Slow down the connection handshake").withLongOpt("slowhand").create("sl");
+				.withDescription("Slow down the connection handshake").withLongOpt("slowhand").create("sh");
 
 		@SuppressWarnings("static-access")
 		public static final Option AS_STRESS_HEARTBEAT = OptionBuilder.isRequired(false)
-				.withDescription("use small heartbeats to stress server").withLongOpt("heartbeat").create("hb");
+				.withDescription("use small heartbeats to stress server, use -i to set heartbeat timeout, -cl to set amount of sending clients").withLongOpt("heartbeat").create("hb");
 
 		@SuppressWarnings("static-access")
 		public static final Option AS_DROP_CONNECTIONS = OptionBuilder.isRequired(false)
@@ -506,7 +507,7 @@ public class Amqpstress {
 				.withLongOpt("commit_messages").create("co");
 		@SuppressWarnings("static-access")
 		public static final Option MESSAGE_COUNT_OPT = OptionBuilder.isRequired(false).hasArg().withArgName("count")
-				.withType(Number.class).withDescription("Set the number of messages").withLongOpt("massagescount")
+				.withType(Number.class).withDescription("Set the number of messages").withLongOpt("messagecount")
 				.create("mct");
 	}
 }
