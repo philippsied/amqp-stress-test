@@ -1,4 +1,0 @@
-# Usage: bash startBenchmark.sh <URI without amqp://>
-# i.e. For connecting as user "user" with password "pass" on localhost at port 5672 to virtualhost "/"
-bash startBenchmark.sh user:pass@localhost:5672/%2f
-
