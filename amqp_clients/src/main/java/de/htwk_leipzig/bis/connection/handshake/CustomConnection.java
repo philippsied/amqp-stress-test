@@ -17,61 +17,61 @@ import com.rabbitmq.client.ConnectionFactory;
  */
 public class CustomConnection implements Runnable {
 
-	/**
-	 * Member variable to hold the RabbitMQ-Server URI.
-	 */
-	private final URI mUri;
+    /**
+     * Member variable to hold the RabbitMQ-Server URI.
+     */
+    private final URI mUri;
 
-	/**
-	 * Member variable to hold the delay between two created connections with
-	 * full Establish&Close run
-	 */
-	private final long mDelay;
+    /**
+     * Member variable to hold the delay between two created connections with
+     * full Establish&Close run
+     */
+    private final long mDelay;
 
-	/**
-	 * Member variable to hold the used handshake action.
-	 */
-	private final HandshakeAction mAction;
+    /**
+     * Member variable to hold the used handshake action.
+     */
+    private final HandshakeAction mAction;
 
-	/**
-	 * Creates an instance of {@code CustomConnection} with the given uri, the
-	 * given delay between two Establish&Close runs and the given handshake
-	 * action.
-	 * 
-	 * @param uri
-	 *            the uri of the RabbitMQ-Server.
-	 * @param delay
-	 *            the delay between two created connections with full
-	 *            Establish&Close run
-	 * @param handshakeAction
-	 *            action to use between the handshake steps for every
-	 *            Establish&Close run.
-	 */
-	public CustomConnection(final URI uri, final long delay, final HandshakeAction handshakeAction) {
-		mUri = uri;
-		mDelay = delay;
-		mAction = handshakeAction;
+    /**
+     * Creates an instance of {@code CustomConnection} with the given uri, the
+     * given delay between two Establish&Close runs and the given handshake
+     * action.
+     * 
+     * @param uri
+     *            The uri of the RabbitMQ-Server.
+     * @param delay
+     *            The delay between two created connections with full
+     *            Establish&Close run
+     * @param handshakeAction
+     *            Action to use between the handshake steps for every
+     *            Establish&Close run.
+     */
+    public CustomConnection(final URI uri, final long delay, final HandshakeAction handshakeAction) {
+	mUri = uri;
+	mDelay = delay;
+	mAction = handshakeAction;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Runnable#run()
+     */
+    @Override
+    public void run() {
+	try {
+	    do {
+		final ConnectionFactory factory = new CustomConnectionFactory(mAction);
+		factory.setUri(mUri);
+		// factory.setShutdownTimeout(Integer.MAX_VALUE);
+		// factory.setConnectionTimeout(Integer.MAX_VALUE);
+		final Connection connection = factory.newConnection();
+		connection.close();
+		Thread.sleep(mDelay);
+	    } while (true);
+	} catch (Exception e) {
+	    e.printStackTrace();
 	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Runnable#run()
-	 */
-	@Override
-	public void run() {
-		try {
-			do {
-				final ConnectionFactory factory = new CustomConnectionFactory(mAction);
-				factory.setUri(mUri);
-//				factory.setShutdownTimeout(Integer.MAX_VALUE);
-//				factory.setConnectionTimeout(Integer.MAX_VALUE);
-				final Connection connection = factory.newConnection();
-				connection.close();
-				Thread.sleep(mDelay);
-			} while (true);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+    }
 }

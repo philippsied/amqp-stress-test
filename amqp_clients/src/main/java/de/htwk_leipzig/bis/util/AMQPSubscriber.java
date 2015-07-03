@@ -12,66 +12,65 @@ import com.rabbitmq.client.ConnectionFactory;
  * {@code doSubscriberActions} to provide customizable actions on the channel.
  * 
  * <p>
- * {@code AMQPSubscriber} implements {@code Runnable} to allow running in a
- * {@code Thread}.
+ * It implements {@code Runnable} to allow running in a {@code Thread}.
  *
  */
 public abstract class AMQPSubscriber implements Runnable {
 
-	/**
-	 * Member variable to hold the RabbitMQ-Server URI.
-	 */
-	protected final URI mUri;
+    /**
+     * Member variable to hold the RabbitMQ-Server URI.
+     */
+    protected final URI mUri;
 
-	/**
-	 * Default constructor. Only used by specializations of
-	 * {@code AMQPSubscriber}.
-	 * 
-	 * @param uri
-	 *            the uri of the RabbitMQ-Server.
-	 */
-	protected AMQPSubscriber(final URI uri) {
-		mUri = uri;
-	}
+    /**
+     * Default constructor. Only used by specializations of
+     * {@code AMQPSubscriber}.
+     * 
+     * @param uri
+     *            The uri of the RabbitMQ-Server.
+     */
+    protected AMQPSubscriber(final URI uri) {
+	mUri = uri;
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Runnable#run()
-	 */
-	@Override
-	public void run() {
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Runnable#run()
+     */
+    @Override
+    public void run() {
+	try {
+	    final ConnectionFactory factory = ToolBox.createConnectionFactory(mUri);
+	    final Connection connection = factory.newConnection();
+	    try {
+		Channel channel = connection.createChannel();
 		try {
-			final ConnectionFactory factory = ToolBox.createConnectionFactory(mUri);
-			final Connection connection = factory.newConnection();
-			try {
-				Channel channel = connection.createChannel();
-				try {
-					doSubscriberActions(connection, channel);
-				} finally {
-					if (channel != null) {
-						channel.close();
-					}
-				}
-			} finally {
-				if (connection != null) {
-					connection.close();
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
+		    doSubscriberActions(connection, channel);
+		} finally {
+		    if (channel != null) {
+			channel.close();
+		    }
 		}
+	    } finally {
+		if (connection != null) {
+		    connection.close();
+		}
+	    }
+	} catch (Exception e) {
+	    e.printStackTrace();
 	}
+    }
 
-	/**
-	 * Concrete subscriber must overide this method to do their specific
-	 * actions.
-	 * 
-	 * @param channel
-	 *            the channel to use
-	 * @throws Exception
-	 *             which may occur during the action.
-	 */
-	protected abstract void doSubscriberActions(Connection connection, Channel channel) throws Exception;
+    /**
+     * Concrete subscriber must overide this method to do their specific
+     * actions.
+     * 
+     * @param channel
+     *            the channel to use.
+     * @throws Exception
+     *             which may occur during the action.
+     */
+    protected abstract void doSubscriberActions(Connection connection, Channel channel) throws Exception;
 
 }
