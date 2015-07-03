@@ -343,8 +343,8 @@
 		{%
 		 Im Vergleich mit den restlichen Angriffen, setzt dieser Angriff weiter unten im Netzwerkstack an und versucht direkt auf TCP-Ebene die Connections zu schließen. Hierbei wird der TCP-Socket zu einer 
 		 Connection ermittelt und stillschweigend geschlossen, sodass der RabbitMQ-Server erst nach Erreichen des Heartbeat-Timeout die Connection schließen kann. Die Connections werden in hoher Frequenz aufgebaut
-		 geschlossen, sodass der RabbitMQ-Server durch die hängenden Connections belastet ist.\\
-		 \textsc{Anmerkung:} Beim Schließen des TCP-Socket wird ein RST-Packet an den Server gesendet, was sich mit Java-Bordmitteln nicht unterbinden lässt, deshalb ist die Einrichtung einer Firewall-Richtlinie zum
+		 geschlossen, sodass der RabbitMQ-Server durch die hängenden Connections belastet ist. \medskip\newline
+		 \textsc{Anmerkung:} Beim Schließen des TCP-Sockets wird ein RST-Packet an den Server gesendet, was sich mit Java-Bordmitteln nicht unterbinden lässt, deshalb ist die Einrichtung einer Firewall-Richtlinie zum
 		 Blocken der RST-Packeten notwendig (dropRST.sh).
 		}{%
 		 -dc (Aufrufparameter für Angriff) \\
@@ -706,7 +706,11 @@
 		 \measure{HDD}{785MB (Frei)} \newline
 		 \measure{NET}{RCX 293kbit/s\quad TRX 355kbit/s}
 		}{%
-		 1.4ms Latenz; 50Nachrichten/s; Handshake Timout bei 10s, ignoriert Anfrage zum heraufsetzen.
+		 Die Auswirkungen des Angriffes sind kaum wahrnehmbar und unterscheiden sich nur marginal von der alleinigen Ausführung des Anwendungsszenarios.
+		 Selbst bei 20 parallel laufenden Handshakes ist die Auswirkung kaum verändert.\newline
+		 
+		 Der Angriff könnte jedoch, in Analogie zum \glqq Sync-Flooding\grqq\ bei TCP, dazu umgebaut werden, das der Handshake lediglich gestartet wird, um ihn anschließend ohne Rückmeldung zu schließen.
+		 Dabei wird für mindestens 10s ein TCP-Socket des Servers blockiert, was den Server schnell an die Grenze der zur Verfügung stehenden Socketdeskriptoren bringt.
 		}{%
 		 Da im RabbitMQ-Server standardmäßig ein Handshake-Timeout von 10s gesetzt ist, verwendet der vorliegende Angriff jeweils 9 Pause
 		 zu je 1s. Dabei wurde ebenfalls versucht den Timeout auf 30s hochzusetzen, was vom Server jedoch ignoriert wurde.
@@ -743,9 +747,14 @@
 		 \measure{HDD}{785MB (Frei)} \newline
 		 \measure{NET}{RCX 318kbit/s\quad TRX 386kbit/s}
 		}{%
-		 1.4ms, 50Nachrichten/s
+		 Die Auswirkungen des Angriffes sind kaum wahrnehmbar und unterscheiden sich nur marginal von der alleinigen Ausführung des Anwendungsszenarios. So ist die CPU-Auslastung und
+		 die Netzwerkauslastung etwas erhöht, wobei der Peak zu Beginn der Messung durch die Erzeugung der 20 Connections verursacht wurde. Die Latenz sowie die Nachrichtenraten sind im
+		 Anwendungsszenario weitgehen konstant. \medskip\newline
+		 \textsc{Ergänzung:} Es wurde eine Vergleichsmessung mit dem Standard-Heartbeat von 580s durchgeführt, was zu einer Halbierung der CPU-Auslastung (2\%) und einer minimalen
+		 Verbesserung der Latenz geführt hat. Die Netzwerkauslastung hat sich erwartungsgemäß ebenfalls verringert. 
 		}{%
-		. 
+		 Während der Tests wurde versucht, den Heartbeat auf den maximal möglichen Wert zu setzen. Der RabbitMQ-Server ignoriert jedoch alle Anfragen, die darauf Abzielen den Heartbeat auszusetzen oder ihn
+		 höher als auf 580s zu setzen. Somit ist der Heartbeat stets ein Wert zwischen 1 und 580s.
 		}
 		
 		\begin{figure}[!htb]
@@ -779,9 +788,10 @@
 		 \measure{HDD}{785MB (Frei)} \newline
 		 \measure{NET}{RCX 303kbit/s\quad TRX 522kbit/s}
 		}{%
-		 1.4ms, 50Nachrichten/s
+		 Mit steigender Anzahl an unbemerkt geschlossenen Connections, steigt auch der Bedarf an TCP-Sockets auf dem Server. Das überschreiten des Schwellwertes geht deutlich bei der 150. Sekunde aus Abb. \ref{fig:tcpdrop-server1}
+		 hervor. Danach werden keine neuen Connections mehr akzeptiert, weshalb der Speicherbedarf weitgehend konstant ist. Da gegen Ende der Messung die ersten Verbindungen durch den Heartbeat-Timeout geschlossen werden, können kurzzeitig neue Verbindungen aufgebaut werden. Aus Abbildung \ref{fig:tcpdrop-scenario} geht dabei hervor, dass einzig die Latenz in dem Moment der Überschreitung des Socketdeskriptoren-Schwellwertes kurzzeitig beeinflusst wird. 
 		}{%
-		. 
+		 In der Testumgebung standen exakt 1024 Filedeskriptoren zur Verfügung, wovon 829 für Sockets reserviert waren.
 		}
 		
 		\begin{figure}[!htb]
@@ -807,18 +817,19 @@
 		
 		
 \clearpage
-
 \section*{Ausblick}
+	Die hier gezeigten Angriffsszenarien stellen lediglich eine kleinen Ausschnitt der denkbaren Angriffe dar. Hierbei wurden zum Teil bekannte Angriffe auf andere Protokollen adaptiert und ggf. ausgebaut.
+	So existieren in der Literatur jedoch weitere Angriffe z.\,B. für das TCP. Nachfolgend wird eine kleine Auswahl der Angriffe beschrieben und deren mögliche Adaptierung auf das AMQP diskutiert. 
 
-\paragraph{SYN Flood-Angriff} SYN-Flooding ist eines der ältesten Angriffe, dennoch aktuell und von großer Bedeutung. Bei dem Aufbau einer Verbindung zwischen Client und Server wird ein 3-Wege-Handshake durchgeführt. Die Idee hinter diesem Angriff ist es möglichst viele SYN-Pakete zu versenden, um so die Ressourcen des Servers auszulasten. Durch das Ignorieren der Rückantwort (ACK) des Angreifers, wird der Server dennoch gezwungen einige Zeit auf das entsprechende Paket zu warten.
+	\paragraph{SYN Flood-Angriff} 
+		SYN-Flooding ist eines der ältesten Angriffe, dennoch aktuell und von großer Bedeutung. Bei dem Aufbau einer Verbindung zwischen Client und Server wird ein 3-Wege-Handshake durchgeführt. Die Idee hinter diesem Angriff ist es möglichst viele SYN-Pakete zu versenden, um so die Ressourcen des Servers auszulasten. Durch das Ignorieren der Rückantwort (ACK) des Angreifers, wird der Server dennoch gezwungen einige Zeit auf das entsprechende Paket zu warten.
 
-Die SYN-Pakete sind einfach zu erzeugen und entsprechend klein. Hierdurch ist es möglich den Server schnell auszulasten und somit einen Denial-of-Service (DoS) zu bezwecken. Auch bei einem RabbitMQ-Server ist dieser Angriff möglich, denn jede offene Anfrage zum Aufbauen einer Verbindung wird für 10 Sekunden gehalten. Genügend Zeit um alle Socket-Deskriptoren zu belegen. Auf dem unseren Test-System stehen nur 1024 zur Verfügung, welche nur in wenigen Sekunden ausgeschöpft sind. Das bedeutet, dass für eine ernst gemeinte Verbindung keine Ressourcen mehr zur Verfügung stehen. Die Wartezeit lässt sich über die config-Datei \glqq rabbitmq.config\grqq\ beliebig anpassen, bietet dennoch keinen Schutz vor diesen Angriff.
+		Die SYN-Pakete sind einfach zu erzeugen und entsprechend klein. Hierdurch ist es möglich den Server schnell auszulasten und somit einen Denial-of-Service (DoS) zu bezwecken. Auch bei einem RabbitMQ-Server ist dieser Angriff möglich, denn jede offene Anfrage zum Aufbauen einer Verbindung wird für 10 Sekunden gehalten. Genügend Zeit um alle Socket-Deskriptoren zu belegen. Auf dem unseren Test-System stehen nur 1024 zur Verfügung, welche nur in wenigen Sekunden ausgeschöpft sind. Das bedeutet, dass für eine ernst gemeinte Verbindung keine Ressourcen mehr zur Verfügung stehen. Die Wartezeit lässt sich über die config-Datei \glqq rabbitmq.config\grqq\ beliebig anpassen, bietet dennoch keinen Schutz vor diesen Angriff.
 
+\clearpage
 \section*{Zusammenfassung}
 
-An dieser Stelle sollen noch einmal alle gesammelten Erfahrungen zusammentragen werden. RabbitMQ ist in der getesteten Version (3.5.3) ein sehr stabiler Message-Broker und dient zur verteilten Bearbeitung von Aufgaben und Entkopplung von Applikationsteilen. Dennoch zeigten sich unter allen getesteten Angriffsvektoren teils starke veränderte Messwerte in Bezug auf die Übertragungsrate oder der Ressourcen des Servers selbst. Viele Ergebnisse zeigten, dass das Auslagern der Nachrichten vom Arbeitsspeicher auf die Festplatte Auswirkungen auf den Server hat. Können die Nachrichten nicht mehr im Arbeitsspeicher gehalten werden, konzentrieren sich die Ressourcen auf das Auslagern und die Clients werden weitgehend zurückgehalten. Somit zeichnet sich eine geringe Übertragungsrate der Nachrichten aus. Erst nach Beendigung des Schreibvorgangs steigt die Übertragungsrate wieder an. Da der Server in unserem Projekt auf einer virtuellen Maschine beruht und somit stark eingeschränkt ist, zeichnen sich die Unterschiede hier sehr stark ab.
-
-Werden im Transaktionsmodus zu viele Producer angelegt, welche ihre Nachrichten nicht committen, kam es sporadisch zu einen Ausfall des Servers. Selbst die Weboberfläche konnte nicht mehr erreicht werden. Nach einiger Zeit löst der Server dennoch die Verbindungen wieder auf und ist anschließend wieder erreichbar. 
+	An dieser Stelle sollen noch einmal alle gesammelten Erfahrungen zusammentragen werden. RabbitMQ ist in der getesteten Version (3.5.3) ein sehr stabiler Message-Broker und dient zur verteilten Bearbeitung von Aufgaben und Entkopplung von Applikationsteilen. Dennoch zeigten sich unter allen getesteten Angriffsvektoren teils starke veränderte Messwerte in Bezug auf die Übertragungsrate oder der Ressourcen des Servers selbst. Viele Ergebnisse zeigten, dass das Auslagern der Nachrichten vom Arbeitsspeicher auf die Festplatte Auswirkungen auf den Server hat. Können die Nachrichten nicht mehr im Arbeitsspeicher gehalten werden, konzentrieren sich die Ressourcen auf das Auslagern und die Clients werden weitgehend zurückgehalten. Somit zeichnet sich eine geringe Übertragungsrate der Nachrichten aus. Erst nach Beendigung des Schreibvorgangs steigt die Übertragungsrate wieder an. Da der Server in unserem Projekt auf einer virtuellen Maschine beruht und somit stark eingeschränkt ist, zeichnen sich die Unterschiede hier sehr stark ab.
 
 
 
