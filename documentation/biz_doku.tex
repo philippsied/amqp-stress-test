@@ -571,7 +571,8 @@
 		}{
 		 Durch Auslassen des Commits steigt der Speicherverbrauch stark an. Nach wenigen Sekunden ist die Speichergrenze erreicht und es werden keine weiteren Nachrichten übertragen. Daraufhin verharren alle Producer bis der Speicher wieder freigegeben wird (Falls Consumer vorhanden).
 		}{
-		 Die Messung des Andwendungsszenario konnte bei diesem Angriff nicht durchgeführt werden, da das dafür verwendete Tool \glqq HTML Performance Tools\grqq\ bei der Messung reproduzierbar einfriert.
+		 Die Messung des Andwendungsszenario konnte bei diesem Angriff nicht durchgeführt werden, da das dafür verwendete Tool \glqq HTML Performance Tools\grqq\ bei der Messung reproduzierbar einfriert. Sporadisch friert der RabbitMQ-Server bei diesem Versuch ein. Ein Aufbau einer neuen Verbindung schlägt fehl und die Weboberfläche ist nicht mehr erreichbar. Nach längerer Zeit (etwa 10 Minuten) baut der Server aber wieder die Verbindungen ab und ein Zugriff ist wieder möglich. Dennoch bleibt der Speicherverbrauch bestehen.
+
 		}
 
 		\begin{figure}[!htb]
