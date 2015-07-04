@@ -622,6 +622,13 @@
 			\caption{Ausbleiben von Commits im Transaktionsmodus - Verlauf der Transfer-, Empfangsrate und Verlauf der CPU-Last auf dem RabbitMQ-Server}
 			\label{fig:tx-server2}
 		\end{figure}
+		
+		\begin{figure}[!htb]
+			\centering
+			\includegraphics[width=\textwidth]{img/tx/trx.png}
+			\caption{Ausbleiben von Commits im Transaktionsmodus - Verlauf der Transfer-, Empfangsrate und Verlauf der Latenz im Anwendungsszenario bei geringer Testzeit}
+			\label{fig:queue-scenario}
+		\end{figure}
 	
 	
 %-------------------------------------------------------------------------------------------
@@ -636,10 +643,10 @@
 		 Die Anwendung generiert zu Beginn 2500 Weiterleitungsoptionen (Bestehend aus 8 Byte Key und 36 Byte Value = 44 Byte pro Eintrag) und schreibt sie in den Header jeder Nachricht. Hierdurch ist der
 		 RabbitMQ-Server blitzartig massiv ausgelastet, versucht jedoch die Nachrichten auf die Festplatte auszulagern. Die Datenübertragungsrate sinkt dabei auf 20-30 Nachrichten/s. Hierbei macht es
 		 keinen Unterschied ob der Key oder Value vergrößert wird, die geringe Übertragungsrate bleibt bestehen. Der Value wird daher nicht ausgewertet. Die Headergröße ist bei etwa 2500
-		 Weiterleitungsoptionen begrenzt. Wird diese überschritten lässt das System die Verbindung fallen, aufgrund einer zu großen Framegröße. Die Framegröße lässt sich beim Aufbau der
-		 Verbindung angeben, kann aber die bereits voreingestellten eingestellten 128 Byte nicht überschreiten.
+		 Weiterleitungsoptionen begrenzt. Wird diese überschritten lässt das System die Verbindung fallen, aufgrund einer zu großen Framegröße.
 		}{%
-		 Die Messung des Andwendungsszenario konnte bei diesem Angriff nicht durchgeführt werden, da das dafür verwendete Tool \glqq HTML Performance Tools\grqq\ bei der Messung reproduzierbar einfriert.
+		 Die Framegröße lässt sich beim Aufbau der
+		 Verbindung angeben, kann aber die bereits voreingestellten eingestellten 128 Byte nicht überschreiten.
 		}
 
 		\begin{figure}[!htb]
@@ -654,6 +661,13 @@
 			\includegraphics[width=\textwidth]{img/header/header_server2.png}
 			\caption{Nachrichten mit großem Header - Verlauf der Transfer-, Empfangsrate und Verlauf der CPU-Last auf dem RabbitMQ-Server}
 			\label{fig:header-server2}
+		\end{figure}
+		
+		\begin{figure}[!htb]
+			\centering
+			\includegraphics[width=\textwidth]{img/header/header.png}
+			\caption{Nachrichten mit großem Header - Verlauf der Transfer-, Empfangsrate und Verlauf der Latenz im Anwendungsszenario}
+			\label{fig:queue-scenario}
 		\end{figure}
 				
 		\begin{table}[!htb]
