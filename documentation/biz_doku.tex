@@ -10,10 +10,10 @@
 	
 \section*{Zielstellung und Rahmenbedingungen}
 	
-	Diese Dokumentation beschäftigt sich mit dem Thema \glqq Angriffe auf AMQP-Messagebroker\grqq. Begleitend zur Vorlesung  \glqq Betriebliche Informationssysteme\grqq\/ galt es von uns in einem
-	Praktikum zu identifizieren, welche potenziellen Angriffsvektoren existieren. Eingeschlossen ist hier auch das System \glqq RabbitMQ\grqq\/ welches das zu untersuchende Protokoll einschließt.
+	Die vorliegende Dokumentation fasst die Ergebnisse der im Praktikum \glqq Angriffe auf AMQP-Messagebroker\grqq\ erarbeiteten Angriffe zusammen. Das Praktikum war Bestandteil des kooperativ gelehrten
+	Modules \glqq Betriebliche Informationssysteme\grqq\ an der HTWK Leipzig und Uni Leipzig. Ziel des Praktikums war die Ermittlung von potenziellen Angriffsvektoren auf AMQP-Messagebroker - im speziellen RabbitMQ -, die Entwicklung der dafür benötigten Software, die Durchführung der Angriffe und Auswertung der Auswirkungen auf den Server selbst sowie andere unbeteiligte Clients.
 
-	Ziel ist es bestimmt Angriffsvektoren aufzuspüren und zu bewerten. Durch Implementierung von einzelnen Clients auf Basis der RabbitMQ Java-Bibliothek sollen die Angriffe veranschaulicht werden.
+	Die Implementierung der Angriffe erfolgte in der Programmiersprache Java und nutzt dabei die offizielle RabbitMQ Java-Bibliothek.
 	Mit veränderten Parametern richtet sich die Suche gezielt nach Faktoren die das System negativ beeinflussen und so die Verfügbarkeit stören, fokussiert auf \glqq Denial of Service\grqq. DoS
 	kann dabei auf verschiedene Ressourcen bezogen sein (wie CPU, Arbeitsspeicher, Netzwerkbandbreite etc.).
 
@@ -57,7 +57,7 @@
 % ---------------------------------------------------------------------------------------------- %
 \clearpage
 \section*{Testumgebung}
-	Als Betriebssystem für die Bereistellung des RabbitMQ-Servers wurde ein Ubuntu Server 14.04.2 LTS mit Kernel 3.16.0-30 verwendet. Das Testsysten wurde dabei als Virtuelle Maschine (VM) in der Virtualisierungslösung \glqq Virtualbox\grqq\ der Firma Oracle betrieben, um eine einfache Skalierung der Hardware, eine einfache Portabilität des Testsystem und einen reproduzierbaren Systemzustand, über die integrierte Snapshot-Funktion, bereitzustellen. Für die Konfiguration wurden die in Tabelle \ref{tab:testvm} dargestellten Einstellungen gewählt. 
+	Als Betriebssystem für den RabbitMQ-Servers wurde ein \tsl{Ubuntu Server 14.04.2 LTS} mit Kernel 3.16.0-30 verwendet. Das Testsysten wurde dabei als Virtuelle Maschine (VM) in der Virtualisierungslösung \glqq Virtualbox\grqq\ der Firma Oracle betrieben, um eine einfache Skalierung der Hardware, eine einfache Portabilität des Testsystem und einen reproduzierbaren Systemzustand, über die integrierte Snapshot-Funktion, bereitzustellen. Für die Konfiguration wurden die in Tabelle \ref{tab:testvm} dargestellten Einstellungen gewählt. 
 	\begin{table}[!htb]
 	\centering
 	\begin{tabular}{p{3cm}|p{6cm}}
@@ -78,7 +78,8 @@
 		\ttfamily 		
 		\$\,> wget \url{https://raw.githubusercontent.com/philippsied/amqp-stress-test/master/utilities/setupTestEnv.sh}
 	\end{quote}
-	aus dem Git-Repository heruntergeladen werden. Da das Skript für die Einstellung des Netzwerkinterface Root-Rechte benötigt (Sudo-Rechte genügen nicht), muss der Root-User zuvor aktivert werden. Abschließend kann das Skript mit Sudo-Rechten ausgeführt werden:
+	aus dem Git-Repository heruntergeladen werden. Da das Skript für die Einstellung des Netzwerkinterfaces Root-Rechte benötigt (Sudo-Rechte genügen nicht), muss der Root-User zuvor aktivert werden.
+	Abschließend kann das Skript mit Sudo-Rechten ausgeführt werden:
 	\begin{quote}
 		\ttfamily 
 		\$\,> sudo passwd root\\
@@ -88,7 +89,6 @@
 	Nach Abschluss der Einrichtung erfolgt eine übersichtliche Ausgabe aller Informationen, einschließlich der RabbitMQ-Benutzerdaten und Adressen.
 
 	
-	% Beschreibung Testrechner Szenario, VM-Rechner, Client
 
 
 
@@ -100,15 +100,49 @@
 \clearpage
 \section*{Beschreibung des Benchmarking}
 	
-	Für die Beobachtung des Ressourcenverbrauches auf dem RabbitMQ-Server wurde das Kommandozeilenprogramm \tsl{glances} verwendet. Der Programmaufruf für jeden Test lautete wie folgt:
+	Für die Durchführung des Benchmarking wurde stets der nachfolgend beschriebene Ablauf verwendet. Hierbei kamen drei physisch unabhängige Computer als Messpunkte zum Einsatz: der RabbitMQ-Server,
+	der Client von dem der Angriff ausgeht und der Client zur Messung des Anwendungsszenarios. Dadurch soll eine gegenseitige Beeinflussung bereits im Vorfeld ausgeschlossen werden. Da die Messungen
+	stets für ca. 10min ausgelegt waren, wurden sämtliche Stromsparmechanismen für die ersten 10min deaktiviert.
+	
+	Zu Beginn muss die VM des RabbitMQ-Servers gestartet werden. Vor jeder Messung wurde die VM dabei auf einen Snapshot zurückgesetzt, bei der sich das System einem Zustand befindet,
+	den es 5 minuten nach dem Hochfahren der VM besitzt (Uptime ca. 5min).
+	Für die Beobachtung des Ressourcenverbrauches auf dem RabbitMQ-Server wurde das Kommandozeilenprogramm \tsl{glances} verwendet.
+	\\Der Programmaufruf für jeden Test lautete wie folgt:
 	\begin{quote}
 		\ttfamily
 		\$\,> sudo glances -t 5 -\,-disable-process -\,-export-csv measure.csv
 	\end{quote}
 	Er veranlasst, die Ansicht alle 5 Sekunden zu erneuern und die Anzeige der aktuell laufenden Prozesse abzuschalten, um den Ressourcenverbrauch durch \textsl{glances} selbst zu reduzieren.
-	Die Messwerte werden dabei in eine CSV-Datei exportiert, welche später zur Visualisierung und Auswertung verwendet wurde.
-	Vor jeder Messung wurde die VM auf einen Snapshot zurückgesetzt, bei der sich das System in einem Zustand befindet, den es 5 minuten nach dem Hochfahren der VM besitzt.
+	Die Messwerte werden dabei in die \tsl{measure.csv}-Datei exportiert, welche später zur Visualisierung und Auswertung verwendet wurde.
 	
+	Anschließend wurde die Messung des Anwendungsszenarios gestartet. Dazu wurde das Skript \hl{startBenchmark.sh}\footnote{\url{https://github.com/philippsied/amqp-stress-test/tree/master/perfBenchmark/runscenario}}
+	verwendet.\\Der Aufruf lautete wie folgt:
+	\begin{quote}
+		\ttfamily
+		\$\,> bash startBenchmark.sh "measure.json"\ \textbackslash\\ 
+		                    \hspace*{6cm} testc:testp@192.168.178.153:5672/\%2f
+	\end{quote}
+	
+	Als letztes wurde der Angriff gestartet. Dafür kamen je nach Angriff unterschiedliche Parameter zum Einsatz. Die Angriffe wurde über separate \glqq runconfigs\grqq\footnote{\url{https://github.com/philippsied/amqp-stress-test/tree/master/perfBenchmark/runconfigs}} aus eclipse heraus gestartet. 
+	
+	Die Messung des Anwendungsszenario ist auf 10min festgelegt.\footnote{\url{https://github.com/philippsied/amqp-stress-test/tree/master/perfBenchmark/runscenario/publish-consume-spec.template}}
+	Sobald die Messung des Anwendungsszenarios abgeschlossen ist, kann glances über die Eingabe von \glqq q\grqq\ beendet werden, der Angriff unterbrochen werden und die Ergebnisse in der \tsl{measure.csv}-Datei
+	bzw. \tsl{measure.json}-Datei von den Computern aggregiert werden.
+	
+	Abschließend gilt es die Ergebnisse grafisch aufzubereiten und auszuwerten. Dafür müssen die \tsl{measure.csv} und die \tsl{measure.json} Dateien z.\,B. unterhalb des reporting Ordners kopiert
+	werden\footnote{\url{https://github.com/philippsied/amqp-stress-test/tree/master/perfBenchmark/reporting}} und mittels des \hl{transformToJson.sh} BASH-Skriptes in eine \glqq measure.json\grqq\
+	transformiert werden:
+	\begin{quote}
+		\ttfamily
+		\$\,> bash transformToJson.sh "DoS"\ measure.csv measure.json
+	\end{quote}
+	Über die \hl{Results.html}-Datei können die Ergebnisse nun betrachtet und ausgewertet werden. Sofern die eingestellten Skalierungen für die Achsen nicht genügen, können diese über die div-Attribute
+	in der HTML-Datei angepasst werden.
+	
+	
+	
+\clearpage
+\section*{Beschreibung der Anwendungsszenarien}
 	\usecase{Leerlauf}%
 		{Der RabbitMQ-Server befindet sich im Leerlauf, d.\,h. ohne irgendeine Form von Last.}%
 		{Keine}%
@@ -579,14 +613,14 @@
 			\centering
 			\includegraphics[width=\textwidth]{img/tx/tx_server1.png}
 			\caption{Ausbleiben von Commits im Transaktionsmodus - Verlauf des Speicherbedarfs für RAM/HDD und Verlauf der CPU-Last auf dem RabbitMQ-Server}
-			\label{fig:commit-server1}
+			\label{fig:tx-server1}
 		\end{figure}
 		
 		\begin{figure}[!htb]
 			\centering
-			\includegraphics[width=\textwidth]{img/tx/tx_server1.png}
+			\includegraphics[width=\textwidth]{img/tx/tx_server2.png}
 			\caption{Ausbleiben von Commits im Transaktionsmodus - Verlauf der Transfer-, Empfangsrate und Verlauf der CPU-Last auf dem RabbitMQ-Server}
-			\label{fig:commit-server2}
+			\label{fig:tx-server2}
 		\end{figure}
 	
 	
