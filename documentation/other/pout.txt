@@ -1,0 +1,24 @@
+usage: amqptest [-c <count>] [-cl <count>] [-co <commit>] -dc | -dm <responsetyp> | -dq <queueAction> |
+                -hb | -lh | -mc | -sh | -tc | -ts | -tx   [-h]  [-hs <size>] [-i <milliseconds>]
+                [-mct <count>] [-mp] [-ms <size in bytes>] [-p <count>] [-pc <count>] -u <uri>
+Options
+ -c,--consumer <count>           Set count of parallel running consumers
+ -cl,--clients <count>           Set count of parallel running clients
+ -co,--commit_messages <commit>  Set for committing messages - true/false
+ -dc,--dropcon                   open connection and immediately close the Socket (Without keep-alive,
+                                 max. heartbeat) and send TCP RST
+ -dm,--dosmsg <responsetyp>      DoS with messages, type is one of "ACK","NO","NACK","REJECT"
+ -dq,--dosqueue <queueAction>    DoS with queues, type is one of "NO","MSG"
+ -hb,--heartbeat                   use small heartbeats to stress server, use -i to set heartbeat timeout,
+                                 -cl to set amount of sending clients
+ -hs,--headersize <size>         Set the size of the Headerfield - Number of entrys
+ -i,--minterval <milliseconds>   Set interval for a simple action, interpreted as milliseconds
+ -lh,--largeheader               Send messages with large header
+ -mc,--manych                    Send messages over one Connection and many Channels; set over -p and\,-c
+ -mct,--messagecount <count>     Set the number of messages
+ -mp,--persistent                Set messages/queues persistent
+ -ms,--msize <size in bytes>     Set the size of each message
+ -p,--producer <count>           Set count of parallel running producers
+ -pc,--pendingcount <count>        Set count of cached elements, i.e. the count of message to NACK all at once
+ -sh,--slowhand                  Slow down the connection handshake
+ -tx,--txmode                    Used the transaction-mode
